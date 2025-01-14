@@ -51,7 +51,7 @@ def main(idx):
     posts = driver.find_elements(By.XPATH, '//div[@role="feed"]/div')[1:]
 
     if input() == "ok":
-        for idx, post in enumerate(posts, start=1):  # Đặt chỉ số bắt đầu từ 1
+        for idx, post in enumerate(posts, start=1):
             try:
                 driver.execute_script("arguments[0].scrollIntoView(true);", post)
                 WebDriverWait(post, 30).until(

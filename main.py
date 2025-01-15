@@ -43,14 +43,15 @@ def main(idx):
     driver.maximize_window()
 
     driver.get("https://www.facebook.com/groups/genshin.vi")
-    max_scroll_attempts = 10
-    for _ in range(max_scroll_attempts):
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(1)
-
-    posts = driver.find_elements(By.XPATH, '//div[@role="feed"]/div')[1:]
-
+    
     if input() == "ok":
+        max_scroll_attempts = 10
+        for _ in range(max_scroll_attempts):
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(1)
+
+        posts = driver.find_elements(By.XPATH, '//div[@role="feed"]/div')[1:]
+
         for idx, post in enumerate(posts, start=1):
             try:
                 driver.execute_script("arguments[0].scrollIntoView(true);", post)

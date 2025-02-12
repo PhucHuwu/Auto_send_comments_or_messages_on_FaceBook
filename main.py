@@ -61,7 +61,7 @@ def main(idx):
         driver.get(link)
         time.sleep(uniform(1, 3))
 
-        max_scroll_attempts = 1
+        max_scroll_attempts = 20
         for _ in range(max_scroll_attempts):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(uniform(1, 3))

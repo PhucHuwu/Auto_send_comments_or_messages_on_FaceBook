@@ -59,9 +59,9 @@ def main(idx):
 
     for link in list_link:
         driver.get(link)
-        time.sleep(uniform(2, 5))
+        time.sleep(uniform(1, 3))
 
-        max_scroll_attempts = 10
+        max_scroll_attempts = 20
         for _ in range(max_scroll_attempts):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(uniform(1, 3))
@@ -76,42 +76,55 @@ def main(idx):
         for post in posts:
             try:
                 driver.execute_script("arguments[0].scrollIntoView(true);", post)
-                time.sleep(uniform(2, 5))
-                
+                time.sleep(uniform(1, 3))
+            except Exception:
+                print(f"Lỗi 3 ở luồng {idx + 1}")
+                continue
+
+            try:
                 WebDriverWait(post, 30).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, '[aria-label="Viết bình luận"]'))
                 ).click()
-                
+            except Exception:
+                print(f"Lỗi 4 ở luồng {idx + 1}")
+                continue
+            time.sleep(uniform(1, 3))
+
+            try:
                 WebDriverWait(driver, 30).until(
                     EC.presence_of_element_located((By.XPATH, config.text_box_xpath))
                 )
-                
+            except Exception:
+                print(f"Lỗi 5 ở luồng {idx + 1}")
+                continue
+            time.sleep(uniform(1, 3))
+
+            try:
                 text = choice(list_text)
                 ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
                 time.sleep(uniform(2, 5))
             except Exception:
+                print(f"Lỗi 6 ở luồng {idx + 1}")
                 try:
                     auto_click(driver, config.close_button_xpath, 30)
-                except Exception:
-                    print(f"Lỗi 5 ở luồng {idx + 1}")
                     continue
-                print(f"Lỗi 4 ở luồng {idx + 1}")
-                continue
+                except Exception:
+                    print(f"Lỗi 7 ở luồng {idx + 1}")
+                    continue
+            time.sleep(uniform(1, 3))
 
             try:
                 auto_click(driver, config.close_button_xpath, 30)
             except Exception:
-                print(f"Lỗi 6 ở luồng {idx + 1}")
+                print(f"Lỗi 7 ở luồng {idx + 1}")
                 continue
 
-            time.sleep(uniform(2, 5))
-
+            time.sleep(uniform(1, 3))
     # -----------------------------------------------------------------------------------------------------------------
-
 
 threads = []
 
-quantity = 1 #input("Nhập số lượng luồng: ")
+quantity = 1  # input("Nhập số lượng luồng: ")
 for idx in range(int(quantity)):
     thread = threading.Thread(target=main, args=(idx,))
     thread.start()

@@ -20,9 +20,12 @@ if not os.path.exists('csv.csv'):
 
 df = pd.read_csv('csv.csv')
 list_link = df["Link"].dropna().values.tolist()
+list_text = df["Text"].dropna().values.tolist()
+
 
 driver_lock = threading.Lock()
 confirmation_received = threading.Event()
+
 
 def main(idx):
     options = uc.ChromeOptions()
@@ -48,13 +51,55 @@ def main(idx):
     for link in list_link:
         driver.get(link + "/members")
         
+        max_scroll_attempts = 1
+        for _ in range(max_scroll_attempts):
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(uniform(1, 3))
+        
         try:
-            target_list = driver.find_element(By.XPATH, '//div[@role="list"][.//span[contains(text(), "New to the group")]]')
-            members = driver.find_elements(By.XPATH, '//div[@role="listitem"]')
-        except:
-            target_list = None  # Nếu không tìm thấy
-            print("ko")
-
+            WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@role='listitem']")))
+            members = driver.find_elements(By.XPATH, "//div[@role='listitem']")
+        except Exception:
+            print(f"Lỗi 2 ở luồng {idx + 1}")
+            continue
+            
+        for member in members:
+            try:
+                driver.execute_script("arguments[0].scrollIntoView(true);", member)
+            except Exception:
+                print(f"Lỗi 3 ở luồng {idx + 1}")
+                continue
+            
+            try:
+                profile_element = member.find_element(By.XPATH, ".//a[@href]")
+                profile_link = profile_element.get_attribute("href")
+                driver.execute_script("window.open(arguments[0], '_blank');", profile_link)
+                
+                WebDriverWait(driver, 30).until(lambda d: len(d.window_handles) > 1)
+                driver.switch_to.window(driver.window_handles[-1])                    
+            except Exception:
+                print(f"Lỗi 4 ở luồng {idx + 1}")
+                continue
+            
+            try:
+                auto_click(driver, "//div[@role='button' and .//span[text()='Nhắn tin']]", 15, 1)
+            except Exception:
+                print(f"Lỗi 5 ở luồng {idx + 1}")
+                driver.close()
+                driver.switch_to.window(driver.window_handles[0])
+                
+            time.sleep(uniform(1, 3))
+                
+            try:
+                text = choice(list_text)
+                auto_click(driver, "//*[@role='textbox' and (@aria-label='Tin nhắn' or @aria-label='Nhắn tin')]", 15, 1)
+                time.sleep(uniform(1, 3))
+                ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
+            except Exception:
+                print(f"Lỗi 6 ở luồng {idx + 1}")
+            finally:
+                driver.close()
+                driver.switch_to.window(driver.window_handles[0])
 
 threads = []
 

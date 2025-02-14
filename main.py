@@ -64,11 +64,11 @@ def main(idx):
         max_scroll_attempts = 20
         for _ in range(max_scroll_attempts):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(uniform(1, 3))
+            time.sleep(1)
 
         try:
-            WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, '//div[@role="feed"]/div')))
-            posts = driver.find_elements(By.XPATH, '//div[@role="feed"]/div')[1:]
+            WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.feed_xpath)))
+            posts = driver.find_elements(By.XPATH, config.feed_xpath)[1:]
         except Exception:
             print(f"Lỗi 2 ở luồng {idx + 1}")
             continue
@@ -83,7 +83,7 @@ def main(idx):
 
             try:
                 WebDriverWait(post, 30).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, '[aria-label="Viết bình luận"]'))
+                    EC.presence_of_element_located((By.CSS_SELECTOR, config.comment_button_xpath))
                 ).click()
             except Exception:
                 print(f"Lỗi 4 ở luồng {idx + 1}")
@@ -102,7 +102,7 @@ def main(idx):
             try:
                 text = choice(list_text)
                 ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
-                time.sleep(uniform(2, 5))
+                time.sleep(uniform(1, 3))
             except Exception:
                 print(f"Lỗi 6 ở luồng {idx + 1}")
                 try:
@@ -121,58 +121,58 @@ def main(idx):
 
             time.sleep(uniform(1, 3))
     # -----------------------------------------------------------------------------------------------------------------
-    for link in list_link:
-        driver.get(link + "/members")
+    # for link in list_link:
+    #     driver.get(link + "/members")
         
-        max_scroll_attempts = 1
-        for _ in range(max_scroll_attempts):
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(uniform(1, 3))
+    #     max_scroll_attempts = 1
+    #     for _ in range(max_scroll_attempts):
+    #         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    #         time.sleep(uniform(1, 3))
         
-        try:
-            WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@role='listitem']")))
-            members = driver.find_elements(By.XPATH, "//div[@role='listitem']")
-        except Exception:
-            print(f"Lỗi 2 ở luồng {idx + 1}")
-            continue
+    #     try:
+    #         WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@role='listitem']")))
+    #         members = driver.find_elements(By.XPATH, "//div[@role='listitem']")
+    #     except Exception:
+    #         print(f"Lỗi 2 ở luồng {idx + 1}")
+    #         continue
             
-        for member in members:
-            try:
-                driver.execute_script("arguments[0].scrollIntoView(true);", member)
-            except Exception:
-                print(f"Lỗi 3 ở luồng {idx + 1}")
-                continue
+    #     for member in members:
+    #         try:
+    #             driver.execute_script("arguments[0].scrollIntoView(true);", member)
+    #         except Exception:
+    #             print(f"Lỗi 3 ở luồng {idx + 1}")
+    #             continue
             
-            try:
-                profile_element = member.find_element(By.XPATH, ".//a[@href]")
-                profile_link = profile_element.get_attribute("href")
-                driver.execute_script("window.open(arguments[0], '_blank');", profile_link)
+    #         try:
+    #             profile_element = member.find_element(By.XPATH, ".//a[@href]")
+    #             profile_link = profile_element.get_attribute("href")
+    #             driver.execute_script("window.open(arguments[0], '_blank');", profile_link)
                 
-                WebDriverWait(driver, 30).until(lambda d: len(d.window_handles) > 1)
-                driver.switch_to.window(driver.window_handles[-1])                    
-            except Exception:
-                print(f"Lỗi 4 ở luồng {idx + 1}")
-                continue
+    #             WebDriverWait(driver, 30).until(lambda d: len(d.window_handles) > 1)
+    #             driver.switch_to.window(driver.window_handles[-1])                    
+    #         except Exception:
+    #             print(f"Lỗi 4 ở luồng {idx + 1}")
+    #             continue
             
-            try:
-                auto_click(driver, "//div[@role='button' and .//span[text()='Nhắn tin']]", 15, 1)
-            except Exception:
-                print(f"Lỗi 5 ở luồng {idx + 1}")
-                driver.close()
-                driver.switch_to.window(driver.window_handles[0])
+    #         try:
+    #             auto_click(driver, config.message_button_xpath, 15, 1)
+    #         except Exception:
+    #             print(f"Lỗi 5 ở luồng {idx + 1}")
+    #             driver.close()
+    #             driver.switch_to.window(driver.window_handles[0])
                 
-            time.sleep(uniform(1, 3))
+    #         time.sleep(uniform(1, 3))
                 
-            try:
-                text = choice(list_text)
-                auto_click(driver, "//*[@role='textbox' and (@aria-label='Tin nhắn' or @aria-label='Nhắn tin')]", 15, 1)
-                time.sleep(uniform(1, 3))
-                ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
-            except Exception:
-                print(f"Lỗi 6 ở luồng {idx + 1}")
-            finally:
-                driver.close()
-                driver.switch_to.window(driver.window_handles[0])
+    #         try:
+    #             text = choice(list_text)
+    #             auto_click(driver, config.message_text_box_xpath, 15, 1)
+    #             time.sleep(uniform(1, 3))
+    #             ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
+    #         except Exception:
+    #             print(f"Lỗi 6 ở luồng {idx + 1}")
+    #         finally:
+    #             driver.close()
+    #             driver.switch_to.window(driver.window_handles[0])
     
     
 threads = []

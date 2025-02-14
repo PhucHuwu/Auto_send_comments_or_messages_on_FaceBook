@@ -118,7 +118,6 @@ def main(idx):
             except Exception:
                 print(f"Lỗi 7 ở luồng {idx + 1}")
                 continue
-
             time.sleep(uniform(1, 3))
     # -----------------------------------------------------------------------------------------------------------------
     # for link in list_link:
@@ -147,7 +146,6 @@ def main(idx):
     #             profile_element = member.find_element(By.XPATH, ".//a[@href]")
     #             profile_link = profile_element.get_attribute("href")
     #             driver.execute_script("window.open(arguments[0], '_blank');", profile_link)
-                
     #             WebDriverWait(driver, 30).until(lambda d: len(d.window_handles) > 1)
     #             driver.switch_to.window(driver.window_handles[-1])                    
     #         except Exception:
@@ -160,7 +158,6 @@ def main(idx):
     #             print(f"Lỗi 5 ở luồng {idx + 1}")
     #             driver.close()
     #             driver.switch_to.window(driver.window_handles[0])
-                
     #         time.sleep(uniform(1, 3))
                 
     #         try:

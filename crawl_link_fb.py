@@ -39,16 +39,16 @@ def main(idx, link_group):
             time.sleep(180)
             return
 
-    screen_width = driver.execute_script("return window.screen.availWidth;")
-    screen_height = driver.execute_script("return window.screen.availHeight;")
-    window_width = screen_width // 3
-    window_height = screen_height // 2
-    position_x = idx * window_width // 20
-    position_y = 0
+    # screen_width = driver.execute_script("return window.screen.availWidth;")
+    # screen_height = driver.execute_script("return window.screen.availHeight;")
+    # window_width = screen_width // 3
+    # window_height = screen_height // 2
+    # position_x = idx * window_width // 20
+    # position_y = 0
 
-    driver.set_window_size(window_width, window_height)
-    driver.set_window_position(position_x, position_y)
-    # driver.maximize_window()
+    # driver.set_window_size(window_width, window_height)
+    # driver.set_window_position(position_x, position_y)
+    driver.maximize_window()
 
     driver.get("https://www.facebook.com/")
 

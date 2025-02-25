@@ -77,7 +77,7 @@ def main(idx, link_group):
             href_element = member.find_element(By.XPATH, ".//a[@href]")
             list_link_user.append(href_element.get_attribute("href"))
         except Exception:
-            print(f"Lỗi 3 ở luồng {idx + 1}")
+            # print(f"Lỗi 3 ở luồng {idx + 1}")
             continue
 
 

@@ -108,7 +108,7 @@ for idx in range(int(quantity)):
     threads.append(thread)
 
 start_program = input("Nhập 'ok' sau khi đã đăng nhập để bắt đầu quá trình spam: ")
-if start_program.lower() == "ok":
+if start_program.lower().strip() == "ok":
     confirmation_received.set()
 
 for thread in threads:

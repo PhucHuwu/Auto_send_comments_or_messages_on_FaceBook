@@ -122,36 +122,36 @@ def main(idx):
     # -----------------------------------------------------------------------------------------------------------------
     # for link in list_link:
     #     driver.get(link + "/members")
-        
+
     #     max_scroll_attempts = 1
     #     for _ in range(max_scroll_attempts):
     #         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     #         time.sleep(uniform(1, 3))
-        
+
     #     try:
-    #         WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, "//div[@role='listitem']")))
-    #         members = driver.find_elements(By.XPATH, "//div[@role='listitem']")
+    #         WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.list_item_xpath)))
+    #         members = driver.find_elements(By.XPATH, config.list_item_xpath)
     #     except Exception:
     #         print(f"Lỗi 2 ở luồng {idx + 1}")
     #         continue
-            
+
     #     for member in members:
     #         try:
     #             driver.execute_script("arguments[0].scrollIntoView(true);", member)
     #         except Exception:
     #             print(f"Lỗi 3 ở luồng {idx + 1}")
     #             continue
-            
+
     #         try:
     #             profile_element = member.find_element(By.XPATH, ".//a[@href]")
     #             profile_link = profile_element.get_attribute("href")
     #             driver.execute_script("window.open(arguments[0], '_blank');", profile_link)
     #             WebDriverWait(driver, 30).until(lambda d: len(d.window_handles) > 1)
-    #             driver.switch_to.window(driver.window_handles[-1])                    
+    #             driver.switch_to.window(driver.window_handles[-1])
     #         except Exception:
     #             print(f"Lỗi 4 ở luồng {idx + 1}")
     #             continue
-            
+
     #         try:
     #             auto_click(driver, config.message_button_xpath, 15, 1)
     #         except Exception:
@@ -159,7 +159,7 @@ def main(idx):
     #             driver.close()
     #             driver.switch_to.window(driver.window_handles[0])
     #         time.sleep(uniform(1, 3))
-                
+
     #         try:
     #             text = choice(list_text)
     #             auto_click(driver, config.message_text_box_xpath, 15, 1)
@@ -181,7 +181,7 @@ for idx in range(int(quantity)):
     threads.append(thread)
 
 start_program = input("Nhập 'ok' sau khi đã đăng nhập để bắt đầu quá trình spam: ")
-if start_program.lower() == "ok":
+if start_program.lower().strip() == "ok":
     confirmation_received.set()
 
 for thread in threads:

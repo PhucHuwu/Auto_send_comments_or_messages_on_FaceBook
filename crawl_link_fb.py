@@ -14,14 +14,48 @@ if not os.path.exists('link_group.csv'):
     print("Hãy đảm bảo file excel tồn tại")
     time.sleep(10)
     exit()
+    
+if not os.path.exists("link_user.csv"):
+    data = {
+        "Link": [],
+        "Status": [],
+        "User_ID": []
+    }
+    df = pd.DataFrame(data)
+    df.to_csv("link_user.csv", index=False)
 
 df = pd.read_csv('link_group.csv')
 list_link_group = df["Link"].dropna().values.tolist()
-list_link_user = []
 
 
 driver_lock = threading.Lock()
+file_lock = threading.Lock()
 confirmation_received = threading.Event()
+
+
+def save_user_link(user_links):
+    if not user_links:
+        return
+
+    pattern = r"https://www\.facebook\.com/groups/\d+/user/(\d+)/"
+
+    if isinstance(user_links, str):
+        user_links = [user_links]
+
+    df_new = pd.DataFrame({"Link": user_links, "Status": [0] * len(user_links)})
+    df_new["User_ID"] = df_new["Link"].str.extract(pattern)
+
+    df_new = df_new[df_new["User_ID"].notna()].drop_duplicates(subset=["User_ID"])
+
+    if not df_new.empty:
+        with file_lock:
+            if os.path.exists("link_user.csv"):
+                df_old = pd.read_csv("link_user.csv")
+                df_new = pd.concat([df_old, df_new]).drop_duplicates(subset=["User_ID"], keep="first")
+
+            df_new["User_ID"] = df_new["User_ID"].astype(int)
+            df_new = df_new.sort_values(by=["User_ID"])
+            df_new.to_csv("link_user.csv", index=False, mode='w')
 
 
 def main(idx, link_group):
@@ -39,55 +73,54 @@ def main(idx, link_group):
             time.sleep(180)
             return
 
-    # screen_width = driver.execute_script("return window.screen.availWidth;")
-    # screen_height = driver.execute_script("return window.screen.availHeight;")
-    # window_width = screen_width // 3
-    # window_height = screen_height // 2
-    # position_x = idx * window_width // 20
-    # position_y = 0
+    screen_width = driver.execute_script("return window.screen.availWidth;")
+    screen_height = driver.execute_script("return window.screen.availHeight;")
+    window_width = screen_width // 3
+    window_height = screen_height // 2
+    position_x = idx * window_width // 20
+    position_y = 0
 
-    # driver.set_window_size(window_width, window_height)
-    # driver.set_window_position(position_x, position_y)
-    driver.maximize_window()
+    driver.set_window_size(window_width, window_height)
+    driver.set_window_position(position_x, position_y)
+    # driver.maximize_window()
 
     driver.get("https://www.facebook.com/")
-
     confirmation_received.wait()
-
-    # for link_group in list_link_group:
     driver.get(link_group + "/members")
+    collected_users = set()
 
     while True:
         last_height = driver.execute_script("return document.body.scrollHeight")
         driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
-        time.sleep(2)
+        time.sleep(1)
         new_height = driver.execute_script("return document.body.scrollHeight")
+        
+        try:
+            WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.list_item_xpath)))
+            members = driver.find_elements(By.XPATH, config.list_item_xpath)
+        except Exception:
+            print(f"Lỗi 2 ở luồng {idx + 1}")
+            break
+        
+        new_users = []
+        for member in members:
+            try:
+                href_element = member.find_element(By.XPATH, ".//a[@href]")
+                user_link = href_element.get_attribute("href")
+                
+                if user_link not in collected_users:
+                    collected_users.add(user_link)
+                    new_users.append(user_link)
+            except Exception:
+                continue
+        
+        for user_link in new_users:
+            save_user_link(user_link)
+        
         if new_height == last_height:
             break
 
-    try:
-        WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.list_item_xpath)))
-        members = driver.find_elements(By.XPATH, config.list_item_xpath)
-    except Exception:
-        print(f"Lỗi 2 ở luồng {idx + 1}")
-        # continue
-
-    for member in members:
-        try:
-            href_element = member.find_element(By.XPATH, ".//a[@href]")
-            list_link_user.append(href_element.get_attribute("href"))
-        except Exception:
-            # print(f"Lỗi 3 ở luồng {idx + 1}")
-            continue
-
-
 threads = []
-
-# quantity = 1  # input("Nhập số lượng luồng: ")
-# for idx in range(int(quantity)):
-#     thread = threading.Thread(target=main, args=(idx,))
-#     thread.start()
-#     threads.append(thread)
 
 for idx, link_group in enumerate(list_link_group):
     thread = threading.Thread(target=main, args=(idx, link_group))
@@ -100,16 +133,3 @@ if start_program.lower().strip() == "ok":
 
 for thread in threads:
     thread.join()
-
-df = pd.DataFrame({
-    "Link": list_link_user,
-    "Status": 0
-})
-
-pattern = r"https://www\.facebook\.com/groups/\d+/user/\d+/"
-df["User_ID"] = df["Link"].str.extract(pattern)
-df = df.drop_duplicates(subset=["User_ID"], keep="first")
-df = df[df["Link"].str.match(pattern, na=False)]
-df["User_ID"] = df["User_ID"].astype(int)
-df = df.sort_values(by=["User_ID"])
-df.to_csv('link_user.csv', index=False)

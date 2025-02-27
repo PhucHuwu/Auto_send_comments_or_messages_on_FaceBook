@@ -70,6 +70,7 @@ def main(idx):
             continue
         
         driver.get("https://www.facebook.com/")
+        time.sleep(uniform(1, 3))
         
         #dang nhap
         

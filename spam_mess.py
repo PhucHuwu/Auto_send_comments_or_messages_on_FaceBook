@@ -29,7 +29,7 @@ df_list_via = pd.read_csv('via.csv')
 list_via = df_list_via["Via"].dropna().values.tolist()
 
 if len(list_text) == 0:
-    print("Vui lòng thêm thêm kịch bản vào file text.csv")
+    print("Vui lòng thêm kịch bản vào file text.csv")
     time.sleep(10)
     exit()
 

@@ -19,14 +19,14 @@ if not os.path.exists('link_user.csv'):
     exit()
 
 df_link_user = pd.read_csv('link_user.csv')
-list_link_user = df_link_user["Link"].dropna().values.tolist()
-list_status = df_link_user["Status"].dropna().values.tolist()
+list_link_user = df_link_user["Link"].dropna().values.tolist() # danh sách link user
+list_status = df_link_user["Status"].dropna().values.tolist() # trạng thái đã nhắn tin hay chưa
 
 df_list_text = pd.read_csv('text.csv')
-list_text = df_list_text["Text"].dropna().values.tolist()
+list_text = df_list_text["Text"].dropna().values.tolist() # danh sách kịch bản nhắn tin
 
 df_list_via = pd.read_csv('via.csv')
-list_via = df_list_via["Via"].dropna().values.tolist()
+list_via = df_list_via["Via"].dropna().values.tolist() # danh sách tài khoản via
 
 if len(list_text) == 0:
     print("Vui lòng thêm kịch bản vào file text.csv")
@@ -65,42 +65,44 @@ def main(idx):
 
     # -----------------------------------------------------------------------------------------------------------------
     for idx, link in enumerate(list_link_user):
-        
-        if list_status[idx] == 1:
+
+        if list_status[idx] == 1: # nếu đã nhắn tin rồi thì bỏ qua
             continue
-        
+
         driver.get("https://www.facebook.com/")
         time.sleep(uniform(1, 3))
-        
-        #dang nhap
-        
+
+        # dang nhap
+
         driver.get(link)
 
+        # Nhắn tin ----------------------------------------------------------------------------------------------------
         try:
-            auto_click(driver, config.message_button_xpath, 15, 1)
+            auto_click(driver, config.message_button_xpath, 15, 1) # click vào nút nhắn tin
         except Exception:
             print(f"Lỗi 5 ở luồng {idx + 1}")
             continue
         time.sleep(uniform(1, 3))
 
         try:
-            auto_click(driver, config.message_text_box_xpath, 15, 1)
+            auto_click(driver, config.message_text_box_xpath, 15, 1) # click vào ô nhập tin nhắn
         except Exception:
             print(f"Lỗi 6 ở luồng {idx + 1}")
             continue
         time.sleep(uniform(1, 3))
-        
+
         try:
             text = choice(list_text)
-            ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
+            ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform() # nhập tin nhắn và gửi
         except Exception:
             print(f"Lỗi 7 ở luồng {idx + 1}")
             continue
         time.sleep(uniform(1, 3))
-        
-        list_status[idx] = 1
+
+        list_status[idx] = 1  # cập nhật trạng thái đã nhắn tin
         df_link_user["Status"] = list_status
         df_link_user.to_csv('link_user.csv', index=False)
+        # -------------------------------------------------------------------------------------------------------------
 
 
 threads = []

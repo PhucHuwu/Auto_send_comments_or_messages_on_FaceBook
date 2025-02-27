@@ -109,6 +109,7 @@ df = pd.DataFrame({
 pattern = r"https://www\.facebook\.com/groups/\d+/user/\d+/"
 df["User_ID"] = df["Link"].str.extract(pattern)
 df = df.drop_duplicates(subset=["User_ID"], keep="first")
-df = df.drop(columns=["User_ID"])
 df = df[df["Link"].str.match(pattern, na=False)]
+df["User_ID"] = df["User_ID"].astype(int)
+df = df.sort_values(by=["User_ID"])
 df.to_csv('link_user.csv', index=False)

@@ -198,11 +198,12 @@ def main(thread_id, user_chunk, status_chunk):
                 ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
                 time.sleep(1)
 
-                sent_message_xpath = f'//div[contains(text(), "{text}")]'
-                WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located((By.XPATH, sent_message_xpath))
-                )
-                messages_sent += 1
+                # sent_message_xpath = f'//div[contains(text(), "{text}")]'
+                # WebDriverWait(driver, 5).until(
+                #     EC.presence_of_element_located((By.XPATH, sent_message_xpath))
+                # )
+                # messages_sent += 1
+                
                 status_chunk[idx] = 1
                 with driver_lock:
                     df_link_user = pd.read_csv('link_user.csv')
@@ -220,10 +221,10 @@ def main(thread_id, user_chunk, status_chunk):
         if via_index >= len(list_via):
             return
 
-    if messages_sent == 0:
-        print(f"Không gửi được tin nào ở luồng {thread_id + 1}, đóng trình duyệt.")
-        driver.quit()
-        return
+    # if messages_sent == 0:
+    #     print(f"Không gửi được tin nào ở luồng {thread_id + 1}, đóng trình duyệt.")
+    #     driver.quit()
+    #     return
 
 
 threads = []

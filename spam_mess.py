@@ -35,7 +35,7 @@ if len(list_text) == 0:
     exit()
 
 max_messages_per_via = 50
-num_threads = 2 # min(len(list_via), len(list_link_user) // max_messages_per_via, os.cpu_count())
+num_threads = 2  # min(len(list_via), len(list_link_user) // max_messages_per_via, os.cpu_count())
 
 chunks = [list_link_user[i::num_threads] for i in range(num_threads)]
 status_chunks = [list_status[i::num_threads] for i in range(num_threads)]
@@ -88,20 +88,20 @@ def main(thread_id, user_chunk, status_chunk):
     driver.set_window_size(window_width, window_height)
     driver.set_window_position(position_x, position_y)
     # driver.maximize_window()
-    
+
     messages_sent = 0
     via_index = thread_id
-    
+
     # -----------------------------------------------------------------------------------------------------------------
     while via_index < len(list_via):
-        driver.get("https://www.facebook.com/")        
+        driver.get("https://www.facebook.com/")
         time.sleep(3)
-        
+
         if not is_logged_in(driver):
             # log in ------------------------------------------------------------------------------------------------------
             list_via_split = list_via[via_index].split('|')
             account_id, password, two_fa_token = list_via_split[0], list_via_split[1], get_token(list_via_split[2])
-            
+
             time.sleep(3)
             if two_fa_token is None:
                 via_index += num_threads
@@ -114,7 +114,7 @@ def main(thread_id, user_chunk, status_chunk):
             except:
                 print(f"Lỗi 4 ở luồng {thread_id + 1}")
                 continue
-            
+
             try:
                 ActionChains(driver).send_keys(account_id).send_keys(Keys.TAB).perform()
                 ActionChains(driver).send_keys(password).send_keys(Keys.ENTER).perform()
@@ -122,25 +122,25 @@ def main(thread_id, user_chunk, status_chunk):
                 print(f"Lỗi 5 ở luồng {thread_id + 1}")
                 continue
             time.sleep(uniform(1, 3))
-            
+
             try:
                 ActionChains(driver).send_keys(two_fa_token).send_keys(Keys.ENTER).perform()
             except:
                 print(f"Lỗi 6 ở luồng {thread_id + 1}")
             time.sleep(uniform(1, 3))
-            
+
             try:
                 auto_click(driver, config.trust_device_button_xpath, 5, 1)
             except:
                 print(f"Lỗi 7 ở luồng {thread_id + 1}")
-            
+
             if "checkpoint" in driver.page_source:
                 via_index += num_threads
                 continue
             # -------------------------------------------------------------------------------------------------------------
-            
+
         else:
-            
+
             # log out -----------------------------------------------------------------------------------------------------
             if is_logged_in(driver):
                 try:
@@ -155,7 +155,7 @@ def main(thread_id, user_chunk, status_chunk):
                     print(f"Lỗi 3 ở luồng {thread_id + 1}")
                     continue
             # -------------------------------------------------------------------------------------------------------------
-            
+
         for idx, link in enumerate(user_chunk):
             if status_chunk[idx] == 1:
                 continue
@@ -184,7 +184,7 @@ def main(thread_id, user_chunk, status_chunk):
                 text = choice(list_text)
                 ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
                 time.sleep(1)
-                
+
                 sent_message_xpath = f'//div[contains(text(), "{text}")]'
                 WebDriverWait(driver, 5).until(
                     EC.presence_of_element_located((By.XPATH, sent_message_xpath))
@@ -202,14 +202,15 @@ def main(thread_id, user_chunk, status_chunk):
 
         via_index += num_threads
         messages_sent = 0
-        
-        if via_index >= len(list_via):  
+
+        if via_index >= len(list_via):
             return
 
     if messages_sent == 0:
         print(f"Không gửi được tin nào ở luồng {thread_id + 1}, đóng trình duyệt.")
         driver.quit()
         return
+
 
 threads = []
 for idx in range(num_threads):

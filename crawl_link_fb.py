@@ -84,9 +84,11 @@ def main(idx, link_group):
     driver.set_window_position(position_x, position_y)
     # driver.maximize_window()
 
+    driver.execute_script("document.body.style.zoom='100%'")
     driver.get("https://www.facebook.com/")
     confirmation_received.wait()
     driver.get(link_group + "/members")
+    driver.execute_script("document.body.style.zoom='25%'")
     collected_users = set()
 
     while True:

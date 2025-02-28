@@ -8,6 +8,8 @@ import time
 import threading
 import os
 import pandas as pd
+import requests
+import pyperclip
 from random import uniform
 from click import auto_click
 import config
@@ -123,25 +125,20 @@ def main(idx, link_group):
         except Exception:
             print(f"Lỗi 5 ở luồng {idx + 1}")
             continue
-        
+
         try:
             ActionChains(driver).send_keys(Keys.ESCAPE).perform()
         except Exception:
             print(f"Lỗi 6 ở luồng {idx + 1}")
             continue
-        
-        link_post = driver.execute_script("return navigator.clipboard.readText();")
-        driver.execute_script("window.open(arguments[0], '_blank');", link_post)
-        WebDriverWait(driver, 10).until(lambda d: len(d.window_handles) > 1)
-        driver.switch_to.window(driver.window_handles[-1])
+
+        link_post = pyperclip.paste()
         try:
-            save_post_link(driver.current_url)
+            link_post = requests.get(link_post, allow_redirects=True)
+            save_post_link(link_post.url)
         except Exception:
             print(f"Lỗi 6 ở luồng {idx + 1}")
-        finally:
-            driver.close()
-            driver.switch_to.window(driver.window_handles[0])
-            
+
 
 threads = []
 

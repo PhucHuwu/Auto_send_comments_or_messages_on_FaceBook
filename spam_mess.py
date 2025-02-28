@@ -63,6 +63,49 @@ def is_logged_in(driver):
         return False
 
 
+def log_in(driver, thread_id, via_index):
+    list_via_split = list_via[via_index].split('|')
+    account_id, password, two_fa_token = list_via_split[0], list_via_split[1], get_token(list_via_split[2])
+
+    time.sleep(3)
+    if two_fa_token is None:
+        via_index += num_threads
+        return False
+
+    try:
+        WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[id="email"]'))
+        ).click()
+    except:
+        print(f"Lỗi 4 ở luồng {thread_id + 1}")
+        return False
+
+    try:
+        ActionChains(driver).send_keys(account_id).send_keys(Keys.TAB).perform()
+        ActionChains(driver).send_keys(password).send_keys(Keys.ENTER).perform()
+    except:
+        print(f"Lỗi 5 ở luồng {thread_id + 1}")
+        return False
+    time.sleep(uniform(1, 3))
+
+    try:
+        ActionChains(driver).send_keys(two_fa_token).send_keys(Keys.ENTER).perform()
+    except:
+        print(f"Lỗi 6 ở luồng {thread_id + 1}")
+    time.sleep(uniform(1, 3))
+
+    try:
+        auto_click(driver, config.trust_device_button_xpath, 5, 1)
+    except:
+        print(f"Lỗi 7 ở luồng {thread_id + 1}")
+
+    if "checkpoint" in driver.page_source:
+        via_index += num_threads
+        return False
+    
+    return True
+
+
 def main(thread_id, user_chunk, status_chunk):
     options = uc.ChromeOptions()
     profile_directory = f"Profile_{thread_id + 1}"
@@ -98,63 +141,23 @@ def main(thread_id, user_chunk, status_chunk):
         time.sleep(3)
 
         if not is_logged_in(driver):
-            # log in ------------------------------------------------------------------------------------------------------
-            list_via_split = list_via[via_index].split('|')
-            account_id, password, two_fa_token = list_via_split[0], list_via_split[1], get_token(list_via_split[2])
-
-            time.sleep(3)
-            if two_fa_token is None:
-                via_index += num_threads
+            if not log_in(driver, thread_id, via_index):
                 continue
-
-            try:
-                WebDriverWait(driver, 30).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, '[id="email"]'))
-                ).click()
-            except:
-                print(f"Lỗi 4 ở luồng {thread_id + 1}")
-                continue
-
-            try:
-                ActionChains(driver).send_keys(account_id).send_keys(Keys.TAB).perform()
-                ActionChains(driver).send_keys(password).send_keys(Keys.ENTER).perform()
-            except:
-                print(f"Lỗi 5 ở luồng {thread_id + 1}")
-                continue
-            time.sleep(uniform(1, 3))
-
-            try:
-                ActionChains(driver).send_keys(two_fa_token).send_keys(Keys.ENTER).perform()
-            except:
-                print(f"Lỗi 6 ở luồng {thread_id + 1}")
-            time.sleep(uniform(1, 3))
-
-            try:
-                auto_click(driver, config.trust_device_button_xpath, 5, 1)
-            except:
-                print(f"Lỗi 7 ở luồng {thread_id + 1}")
-
-            if "checkpoint" in driver.page_source:
-                via_index += num_threads
-                continue
-            # -------------------------------------------------------------------------------------------------------------
-
         else:
+            try:
+                auto_click(driver, config.your_profile_button_xpath, 5, 1)
+            except Exception:
+                print(f"Lỗi 2 ở luồng {thread_id + 1}")
+                continue
 
-            # log out -----------------------------------------------------------------------------------------------------
-            if is_logged_in(driver):
-                try:
-                    auto_click(driver, config.your_profile_button_xpath, 5, 1)
-                except Exception:
-                    print(f"Lỗi 2 ở luồng {thread_id + 1}")
-                    continue
-
-                try:
-                    auto_click(driver, config.logout_button_xpath, 5, 1)
-                except Exception:
-                    print(f"Lỗi 3 ở luồng {thread_id + 1}")
-                    continue
-            # -------------------------------------------------------------------------------------------------------------
+            try:
+                auto_click(driver, config.logout_button_xpath, 5, 1)
+            except Exception:
+                print(f"Lỗi 3 ở luồng {thread_id + 1}")
+                continue
+            
+            if not log_in(driver, thread_id, via_index):
+                continue
 
         for idx, link in enumerate(user_chunk):
             if status_chunk[idx] == 1:

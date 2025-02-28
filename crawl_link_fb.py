@@ -60,7 +60,7 @@ def save_user_link(user_links):
 
 def main(idx, link_group):
     options = uc.ChromeOptions()
-    profile_directory = f"Profile_{idx}"
+    profile_directory = f"Profile_{idx + 1}"
     if not os.path.exists(profile_directory):
         os.makedirs(profile_directory)
 

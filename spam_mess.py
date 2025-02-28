@@ -40,7 +40,7 @@ driver_lock = threading.Lock()
 def main(idx):
     options = uc.ChromeOptions()
     options.add_argument("--disable-popup-blocking")
-    profile_directory = f"Profile_{idx}"
+    profile_directory = f"Profile_{idx + 1}"
     if not os.path.exists(profile_directory):
         os.makedirs(profile_directory)
 

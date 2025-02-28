@@ -30,7 +30,7 @@ confirmation_received = threading.Event()
 
 def main(idx):
     options = uc.ChromeOptions()
-    profile_directory = f"Profile_{idx}"
+    profile_directory = f"Profile_{idx + 1}"
     if not os.path.exists(profile_directory):
         os.makedirs(profile_directory)
 

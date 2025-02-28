@@ -8,6 +8,7 @@ import time
 import threading
 import os
 import pandas as pd
+import requests
 from random import uniform, choice
 from click import auto_click
 import config
@@ -19,28 +20,41 @@ if not os.path.exists('link_user.csv'):
     exit()
 
 df_link_user = pd.read_csv('link_user.csv')
-list_link_user = df_link_user["Link"].dropna().values.tolist() # danh sách link user
-list_status = df_link_user["Status"].dropna().values.tolist() # trạng thái đã nhắn tin hay chưa
+list_link_user = df_link_user["Link"].dropna().values.tolist()
+list_status = df_link_user["Status"].dropna().values.tolist()
 
 df_list_text = pd.read_csv('text.csv')
-list_text = df_list_text["Text"].dropna().values.tolist() # danh sách kịch bản nhắn tin
+list_text = df_list_text["Text"].dropna().values.tolist()
 
 df_list_via = pd.read_csv('via.csv')
-list_via = df_list_via["Via"].dropna().values.tolist() # danh sách tài khoản via
+list_via = df_list_via["Via"].dropna().values.tolist()
 
 if len(list_text) == 0:
     print("Vui lòng thêm kịch bản vào file text.csv")
     time.sleep(10)
     exit()
 
+max_messages_per_via = 50
+num_threads = 2 # min(len(list_via), len(list_link_user) // max_messages_per_via, os.cpu_count())
+
+chunks = [list_link_user[i::num_threads] for i in range(num_threads)]
+status_chunks = [list_status[i::num_threads] for i in range(num_threads)]
 
 driver_lock = threading.Lock()
 
 
-def main(idx):
+def get_token(two_fa_token):
+    url = "https://2fa.live/tok/" + two_fa_token
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        token = data["token"]
+    return token
+
+
+def main(thread_id, user_chunk, status_chunk):
     options = uc.ChromeOptions()
-    options.add_argument("--disable-popup-blocking")
-    profile_directory = f"Profile_{idx + 1}"
+    profile_directory = f"Profile_{thread_id + 1}"
     if not os.path.exists(profile_directory):
         os.makedirs(profile_directory)
 
@@ -49,68 +63,131 @@ def main(idx):
             options.user_data_dir = profile_directory
             driver = uc.Chrome(options=options)
         except Exception:
-            print(f"Lỗi 1 ở luồng {idx + 1}")
+            print(f"Lỗi 1 ở luồng {thread_id + 1}")
             time.sleep(180)
             return
 
-    # screen_width = driver.execute_script("return window.screen.availWidth;")
-    # screen_height = driver.execute_script("return window.screen.availHeight;")
-    # window_width = screen_width // 3
-    # window_height = screen_height // 2
-    # position_x = idx * window_width // 20
-    # position_y = 0
+    screen_width = driver.execute_script("return window.screen.availWidth;")
+    screen_height = driver.execute_script("return window.screen.availHeight;")
+    window_width = screen_width // 3
+    window_height = screen_height // 2
+    position_x = thread_id * window_width // 20
+    position_y = 0
 
-    # driver.set_window_size(window_width, window_height)
-    # driver.set_window_position(position_x, position_y)
-    driver.maximize_window()
-
+    driver.set_window_size(window_width, window_height)
+    driver.set_window_position(position_x, position_y)
+    # driver.maximize_window()
+    
+    messages_sent = 0
+    via_index = thread_id
+    
     # -----------------------------------------------------------------------------------------------------------------
-    for idx, link in enumerate(list_link_user):
-
-        if list_status[idx] == 1: # nếu đã nhắn tin rồi thì bỏ qua
-            continue
-
+    while via_index < len(list_via):
         driver.get("https://www.facebook.com/")
-        time.sleep(uniform(1, 3))
-
-        # dang nhap
-
-        driver.get(link)
-
-        # Nhắn tin ----------------------------------------------------------------------------------------------------
+        
+        # log out -----------------------------------------------------------------------------------------------------
         try:
-            auto_click(driver, config.message_button_xpath, 15, 1) # click vào nút nhắn tin
+            auto_click(driver, config.your_profile_button_xpath, 15, 1)
         except Exception:
-            print(f"Lỗi 5 ở luồng {idx + 1}")
+            print(f"Lỗi 9 ở luồng {thread_id + 1}")
             continue
-        time.sleep(uniform(1, 3))
-
+        
         try:
-            auto_click(driver, config.message_text_box_xpath, 15, 1) # click vào ô nhập tin nhắn
+            auto_click(driver, config.logout_button_xpath, 15, 1)
         except Exception:
-            print(f"Lỗi 6 ở luồng {idx + 1}")
+            print(f"Lỗi 10 ở luồng {thread_id + 1}")
             continue
-        time.sleep(uniform(1, 3))
-
-        try:
-            text = choice(list_text)
-            ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform() # nhập tin nhắn và gửi
-        except Exception:
-            print(f"Lỗi 7 ở luồng {idx + 1}")
-            continue
-        time.sleep(uniform(1, 3))
-
-        list_status[idx] = 1  # cập nhật trạng thái đã nhắn tin
-        df_link_user["Status"] = list_status
-        df_link_user.to_csv('link_user.csv', index=False)
         # -------------------------------------------------------------------------------------------------------------
+        
+        time.sleep(uniform(1, 3))
+        
+        # log in ------------------------------------------------------------------------------------------------------
+        list_via_split = list_via[via_index].split('|')
+        account_id, password, two_fa_token = list_via_split[0], list_via_split[1], get_token(list_via_split[2])
+        
+        if two_fa_token is None:
+            via_index += num_threads
+            continue
+
+        try:
+            WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '[id="email"]'))
+            ).click()
+        except:
+            print(f"Lỗi 2 ở luồng {thread_id + 1}")
+            continue
+        
+        try:
+            ActionChains(driver).send_keys(account_id).send_keys(Keys.TAB).perform()
+            ActionChains(driver).send_keys(password).send_keys(Keys.ENTER).perform()
+        except:
+            print(f"Lỗi 3 ở luồng {thread_id + 1}")
+            continue
+        time.sleep(uniform(1, 3))
+        
+        try:
+            ActionChains(driver).send_keys(two_fa_token).send_keys(Keys.ENTER).perform()
+        except:
+            print(f"Lỗi 4 ở luồng {thread_id + 1}")
+            via_index += num_threads
+            continue
+        time.sleep(uniform(1, 3))
+        
+        try:
+            WebDriverWait(driver, 30).until(
+                EC.element_to_be_clickable((By.XPATH, config.trust_device_button_xpath))
+            ).click()
+        except:
+            print(f"Lỗi 5 ở luồng {thread_id + 1}")
+            pass
+        # -------------------------------------------------------------------------------------------------------------
+        
+        for idx, link in enumerate(user_chunk):
+            if status_chunk[idx] == 1:
+                continue
+
+            if messages_sent >= max_messages_per_via:
+                break
+
+            driver.get(link)
+            time.sleep(uniform(1, 3))
+
+            try:
+                auto_click(driver, config.message_button_xpath, 15, 1)
+            except Exception:
+                print(f"Lỗi 6 ở luồng {thread_id + 1}")
+                continue
+            time.sleep(uniform(1, 3))
+
+            try:
+                auto_click(driver, config.message_text_box_xpath, 15, 1)
+            except Exception:
+                print(f"Lỗi 7 ở luồng {thread_id + 1}")
+                continue
+            time.sleep(uniform(1, 3))
+
+            try:
+                text = choice(list_text)
+                ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
+                messages_sent += 1
+                status_chunk[idx] = 1
+                df_link_user["Status"] = [item for sublist in status_chunks for item in sublist]
+                df_link_user.to_csv('link_user.csv', index=False)
+            except Exception:
+                print(f"Lỗi 8 ở luồng {thread_id + 1}")
+                continue
+            time.sleep(uniform(1, 3))
+
+        via_index += num_threads
+        messages_sent = 0
+        
+        if via_index >= len(list_via):  
+            return
 
 
 threads = []
-
-quantity = 1  # input("Nhập số lượng luồng: ")
-for idx in range(int(quantity)):
-    thread = threading.Thread(target=main, args=(idx,))
+for idx in range(num_threads):
+    thread = threading.Thread(target=main, args=(idx, chunks[idx], status_chunks[idx]))
     thread.start()
     threads.append(thread)
 

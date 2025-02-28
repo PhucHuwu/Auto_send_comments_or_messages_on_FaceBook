@@ -4,7 +4,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 
 
-def auto_click(driver, xpath, time, retries=3):
+def auto_click(driver, xpath, time, retries=1):
     for _ in range(retries):
         try:
             button = WebDriverWait(driver, time).until(EC.element_to_be_clickable((By.XPATH, xpath)))

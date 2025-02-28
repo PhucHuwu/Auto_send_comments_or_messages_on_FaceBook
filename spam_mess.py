@@ -41,6 +41,7 @@ chunks = [list_link_user[i::num_threads] for i in range(num_threads)]
 status_chunks = [list_status[i::num_threads] for i in range(num_threads)]
 
 driver_lock = threading.Lock()
+file_lock = threading.Lock()
 
 
 def get_token(two_fa_token):
@@ -50,6 +51,16 @@ def get_token(two_fa_token):
         data = response.json()
         token = data["token"]
     return token
+
+
+def is_logged_in(driver):
+    try:
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.XPATH, config.your_profile_button_xpath))
+        )
+        return True
+    except:
+        return False
 
 
 def main(thread_id, user_chunk, status_chunk):
@@ -83,63 +94,68 @@ def main(thread_id, user_chunk, status_chunk):
     
     # -----------------------------------------------------------------------------------------------------------------
     while via_index < len(list_via):
-        driver.get("https://www.facebook.com/")
-        
-        # log out -----------------------------------------------------------------------------------------------------
-        try:
-            auto_click(driver, config.your_profile_button_xpath, 5, 1)
-        except Exception:
-            print(f"Lỗi 2 ở luồng {thread_id + 1}")
-            pass
-        
-        try:
-            auto_click(driver, config.logout_button_xpath, 5, 1)
-        except Exception:
-            print(f"Lỗi 3 ở luồng {thread_id + 1}")
-            pass
-        # -------------------------------------------------------------------------------------------------------------
-        
+        driver.get("https://www.facebook.com/")        
         time.sleep(3)
         
-        # log in ------------------------------------------------------------------------------------------------------
-        list_via_split = list_via[via_index].split('|')
-        account_id, password, two_fa_token = list_via_split[0], list_via_split[1], get_token(list_via_split[2])
-        
-        time.sleep(3)
-        if two_fa_token is None:
-            via_index += num_threads
-            continue
+        if not is_logged_in(driver):
+            # log in ------------------------------------------------------------------------------------------------------
+            list_via_split = list_via[via_index].split('|')
+            account_id, password, two_fa_token = list_via_split[0], list_via_split[1], get_token(list_via_split[2])
+            
+            time.sleep(3)
+            if two_fa_token is None:
+                via_index += num_threads
+                continue
 
-        try:
-            WebDriverWait(driver, 30).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, '[id="email"]'))
-            ).click()
-        except:
-            print(f"Lỗi 4 ở luồng {thread_id + 1}")
-            continue
-        
-        try:
-            ActionChains(driver).send_keys(account_id).send_keys(Keys.TAB).perform()
-            ActionChains(driver).send_keys(password).send_keys(Keys.ENTER).perform()
-        except:
-            print(f"Lỗi 5 ở luồng {thread_id + 1}")
-            continue
-        time.sleep(uniform(1, 3))
-        
-        try:
-            ActionChains(driver).send_keys(two_fa_token).send_keys(Keys.ENTER).perform()
-        except:
-            print(f"Lỗi 6 ở luồng {thread_id + 1}")
-            continue
-        time.sleep(uniform(1, 3))
-        
-        try:
-            auto_click(driver, config.trust_device_button_xpath, 5, 1)
-        except:
-            print(f"Lỗi 7 ở luồng {thread_id + 1}")
-            pass
-        # -------------------------------------------------------------------------------------------------------------
-        
+            try:
+                WebDriverWait(driver, 30).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, '[id="email"]'))
+                ).click()
+            except:
+                print(f"Lỗi 4 ở luồng {thread_id + 1}")
+                continue
+            
+            try:
+                ActionChains(driver).send_keys(account_id).send_keys(Keys.TAB).perform()
+                ActionChains(driver).send_keys(password).send_keys(Keys.ENTER).perform()
+            except:
+                print(f"Lỗi 5 ở luồng {thread_id + 1}")
+                continue
+            time.sleep(uniform(1, 3))
+            
+            try:
+                ActionChains(driver).send_keys(two_fa_token).send_keys(Keys.ENTER).perform()
+            except:
+                print(f"Lỗi 6 ở luồng {thread_id + 1}")
+            time.sleep(uniform(1, 3))
+            
+            try:
+                auto_click(driver, config.trust_device_button_xpath, 5, 1)
+            except:
+                print(f"Lỗi 7 ở luồng {thread_id + 1}")
+            
+            if "checkpoint" in driver.page_source:
+                via_index += num_threads
+                continue
+            # -------------------------------------------------------------------------------------------------------------
+            
+        else:
+            
+            # log out -----------------------------------------------------------------------------------------------------
+            if is_logged_in(driver):
+                try:
+                    auto_click(driver, config.your_profile_button_xpath, 5, 1)
+                except Exception:
+                    print(f"Lỗi 2 ở luồng {thread_id + 1}")
+                    continue
+
+                try:
+                    auto_click(driver, config.logout_button_xpath, 5, 1)
+                except Exception:
+                    print(f"Lỗi 3 ở luồng {thread_id + 1}")
+                    continue
+            # -------------------------------------------------------------------------------------------------------------
+            
         for idx, link in enumerate(user_chunk):
             if status_chunk[idx] == 1:
                 continue
@@ -167,15 +183,22 @@ def main(thread_id, user_chunk, status_chunk):
             try:
                 text = choice(list_text)
                 ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
+                time.sleep(1)
+                
+                sent_message_xpath = f'//div[contains(text(), "{text}")]'
+                WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.XPATH, sent_message_xpath))
+                )
+                messages_sent += 1
+                status_chunk[idx] = 1
+                with driver_lock:
+                    df_link_user["Status"] = [item for sublist in status_chunks for item in sublist]
+                    df_link_user.to_csv('link_user.csv', index=False)
+
             except Exception:
                 print(f"Lỗi 10 ở luồng {thread_id + 1}")
                 continue
             time.sleep(uniform(1, 3))
-
-            messages_sent += 1
-            status_chunk[idx] = 1
-            df_link_user["Status"] = [item for sublist in status_chunks for item in sublist]
-            df_link_user.to_csv('link_user.csv', index=False)
 
         via_index += num_threads
         messages_sent = 0
@@ -183,6 +206,10 @@ def main(thread_id, user_chunk, status_chunk):
         if via_index >= len(list_via):  
             return
 
+    if messages_sent == 0:
+        print(f"Không gửi được tin nào ở luồng {thread_id + 1}, đóng trình duyệt.")
+        driver.quit()
+        return
 
 threads = []
 for idx in range(num_threads):

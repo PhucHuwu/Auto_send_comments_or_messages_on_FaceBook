@@ -11,6 +11,7 @@ list_item_xpath = "//div[@role='listitem']"
 
 message_button_xpath = "//div[@role='button' and .//span[text()='Nhắn tin']]"
 message_text_box_xpath = "//*[@role='textbox' and (@aria-label='Tin nhắn' or @aria-label='Nhắn tin')]"
+
 trust_device_button_xpath = '//span[text()="Tin cậy thiết bị này"]'
 your_profile_button_xpath = "//*[@aria-label='Trang cá nhân của bạn']"
 logout_button_xpath = "//span[text()='Đăng xuất']"

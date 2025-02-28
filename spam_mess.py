@@ -205,7 +205,8 @@ def main(thread_id, user_chunk, status_chunk):
                 messages_sent += 1
                 status_chunk[idx] = 1
                 with driver_lock:
-                    df_link_user["Status"] = [item for sublist in status_chunks for item in sublist]
+                    df_link_user = pd.read_csv('link_user.csv')
+                    df_link_user.loc[df_link_user["Link"] == link, "Status"] = 1
                     df_link_user.to_csv('link_user.csv', index=False)
 
             except Exception:

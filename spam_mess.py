@@ -87,24 +87,25 @@ def main(thread_id, user_chunk, status_chunk):
         
         # log out -----------------------------------------------------------------------------------------------------
         try:
-            auto_click(driver, config.your_profile_button_xpath, 15, 1)
+            auto_click(driver, config.your_profile_button_xpath, 5, 1)
         except Exception:
-            print(f"Lỗi 9 ở luồng {thread_id + 1}")
-            continue
+            print(f"Lỗi 2 ở luồng {thread_id + 1}")
+            pass
         
         try:
-            auto_click(driver, config.logout_button_xpath, 15, 1)
+            auto_click(driver, config.logout_button_xpath, 5, 1)
         except Exception:
-            print(f"Lỗi 10 ở luồng {thread_id + 1}")
-            continue
+            print(f"Lỗi 3 ở luồng {thread_id + 1}")
+            pass
         # -------------------------------------------------------------------------------------------------------------
         
-        time.sleep(uniform(1, 3))
+        time.sleep(3)
         
         # log in ------------------------------------------------------------------------------------------------------
         list_via_split = list_via[via_index].split('|')
         account_id, password, two_fa_token = list_via_split[0], list_via_split[1], get_token(list_via_split[2])
         
+        time.sleep(3)
         if two_fa_token is None:
             via_index += num_threads
             continue
@@ -114,31 +115,28 @@ def main(thread_id, user_chunk, status_chunk):
                 EC.presence_of_element_located((By.CSS_SELECTOR, '[id="email"]'))
             ).click()
         except:
-            print(f"Lỗi 2 ở luồng {thread_id + 1}")
+            print(f"Lỗi 4 ở luồng {thread_id + 1}")
             continue
         
         try:
             ActionChains(driver).send_keys(account_id).send_keys(Keys.TAB).perform()
             ActionChains(driver).send_keys(password).send_keys(Keys.ENTER).perform()
         except:
-            print(f"Lỗi 3 ở luồng {thread_id + 1}")
+            print(f"Lỗi 5 ở luồng {thread_id + 1}")
             continue
         time.sleep(uniform(1, 3))
         
         try:
             ActionChains(driver).send_keys(two_fa_token).send_keys(Keys.ENTER).perform()
         except:
-            print(f"Lỗi 4 ở luồng {thread_id + 1}")
-            via_index += num_threads
+            print(f"Lỗi 6 ở luồng {thread_id + 1}")
             continue
         time.sleep(uniform(1, 3))
         
         try:
-            WebDriverWait(driver, 30).until(
-                EC.element_to_be_clickable((By.XPATH, config.trust_device_button_xpath))
-            ).click()
+            auto_click(driver, config.trust_device_button_xpath, 5, 1)
         except:
-            print(f"Lỗi 5 ở luồng {thread_id + 1}")
+            print(f"Lỗi 7 ở luồng {thread_id + 1}")
             pass
         # -------------------------------------------------------------------------------------------------------------
         
@@ -155,28 +153,29 @@ def main(thread_id, user_chunk, status_chunk):
             try:
                 auto_click(driver, config.message_button_xpath, 15, 1)
             except Exception:
-                print(f"Lỗi 6 ở luồng {thread_id + 1}")
+                print(f"Lỗi 8 ở luồng {thread_id + 1}")
                 continue
             time.sleep(uniform(1, 3))
 
             try:
                 auto_click(driver, config.message_text_box_xpath, 15, 1)
             except Exception:
-                print(f"Lỗi 7 ở luồng {thread_id + 1}")
+                print(f"Lỗi 9 ở luồng {thread_id + 1}")
                 continue
             time.sleep(uniform(1, 3))
 
             try:
                 text = choice(list_text)
                 ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
-                messages_sent += 1
-                status_chunk[idx] = 1
-                df_link_user["Status"] = [item for sublist in status_chunks for item in sublist]
-                df_link_user.to_csv('link_user.csv', index=False)
             except Exception:
-                print(f"Lỗi 8 ở luồng {thread_id + 1}")
+                print(f"Lỗi 10 ở luồng {thread_id + 1}")
                 continue
             time.sleep(uniform(1, 3))
+
+            messages_sent += 1
+            status_chunk[idx] = 1
+            df_link_user["Status"] = [item for sublist in status_chunks for item in sublist]
+            df_link_user.to_csv('link_user.csv', index=False)
 
         via_index += num_threads
         messages_sent = 0

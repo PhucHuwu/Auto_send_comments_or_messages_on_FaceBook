@@ -14,4 +14,5 @@ message_text_box_xpath = "//*[@role='textbox' and (@aria-label='Tin nhắn' or @
 
 trust_device_button_xpath = '//span[text()="Tin cậy thiết bị này"]'
 your_profile_button_xpath = "//*[@aria-label='Trang cá nhân của bạn']"
+checkpoint_account_logout_button_xpath = "//div[@aria-label='Lựa chọn khác']"
 logout_button_xpath = "//span[text()='Đăng xuất']"

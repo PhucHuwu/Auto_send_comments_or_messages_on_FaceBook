@@ -35,7 +35,7 @@ if len(list_text) == 0:
     exit()
 
 max_messages_per_via = 20
-num_threads = min(len(list_via), len(list_link_user) // max_messages_per_via, os.cpu_count())
+num_threads = 2 # min(len(list_via), len(list_link_user) // max_messages_per_via, os.cpu_count())
 
 chunks = [list_link_user[i::num_threads] for i in range(num_threads)]
 status_chunks = [list_status[i::num_threads] for i in range(num_threads)]
@@ -53,10 +53,10 @@ def get_token(two_fa_token):
     return token
 
 
-def is_logged_in(driver):
+def is_logged_out(driver):
     try:
         WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.XPATH, config.your_profile_button_xpath))
+            EC.presence_of_element_located((By.CSS_SELECTOR, '[id="email"]'))
         )
         return True
     except:
@@ -99,9 +99,14 @@ def log_in(driver, thread_id, via_index):
     except:
         print(f"Lỗi 7 ở luồng {thread_id + 1}")
 
-    if "checkpoint" in driver.current_url:
-        via_index += num_threads
-        return False
+    # if "checkpoint" in driver.current_url:
+    #     try:
+    #         auto_click(driver, config.checkpoint_account_logout_button_xpath, 5, 1)
+    #         auto_click(driver, config.logout_button_xpath, 5, 1)
+    #     except:
+    #         print(f"Lỗi 11 ở luồng {thread_id + 1}")
+    #     via_index += num_threads
+    #     return False
     
     return True
 
@@ -140,16 +145,21 @@ def main(thread_id, user_chunk, status_chunk):
         driver.get("https://www.facebook.com/")
         time.sleep(3)
 
-        if not is_logged_in(driver):
+        if is_logged_out(driver):
             if not log_in(driver, thread_id, via_index):
                 continue
         else:
             try:
                 auto_click(driver, config.your_profile_button_xpath, 5, 1)
             except Exception:
+                # try:
+                #     auto_click(driver, config.checkpoint_account_logout_button_xpath, 5, 1)
+                # except Exception:
+                    # print(f"Lỗi 2 ở luồng {thread_id + 1}")
+                    # continue
                 print(f"Lỗi 2 ở luồng {thread_id + 1}")
                 continue
-
+            
             try:
                 auto_click(driver, config.logout_button_xpath, 5, 1)
             except Exception:

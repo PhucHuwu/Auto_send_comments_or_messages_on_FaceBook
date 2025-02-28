@@ -34,7 +34,7 @@ if len(list_text) == 0:
     time.sleep(10)
     exit()
 
-max_messages_per_via = 50
+max_messages_per_via = 20
 num_threads = 2  # min(len(list_via), len(list_link_user) // max_messages_per_via, os.cpu_count())
 
 chunks = [list_link_user[i::num_threads] for i in range(num_threads)]
@@ -99,9 +99,9 @@ def log_in(driver, thread_id, via_index):
     except:
         print(f"Lỗi 7 ở luồng {thread_id + 1}")
 
-    if "checkpoint" in driver.page_source:
-        via_index += num_threads
-        return False
+    # if "checkpoint" in driver.page_source:
+    #     via_index += num_threads
+    #     return False
     
     return True
 

@@ -2,11 +2,14 @@ import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 import time
 import threading
 import os
 import pandas as pd
+from random import uniform
+from click import auto_click
 import config
 
 
@@ -14,15 +17,14 @@ if not os.path.exists('link_group.csv'):
     print("Hãy đảm bảo file excel tồn tại")
     time.sleep(10)
     exit()
-    
-if not os.path.exists("link_user.csv"):
+
+if not os.path.exists("link_post.csv"):
     data = {
         "Link": [],
         "Status": [],
-        "User_ID": []
     }
     df = pd.DataFrame(data)
-    df.to_csv("link_user.csv", index=False)
+    df.to_csv("link_post.csv", index=False)
 
 df = pd.read_csv('link_group.csv')
 list_link_group = df["Link"].dropna().values.tolist()
@@ -33,33 +35,9 @@ file_lock = threading.Lock()
 confirmation_received = threading.Event()
 
 
-def save_user_link(user_links):
-    if not user_links:
-        return
-
-    pattern = r"https://www\.facebook\.com/groups/\d+/user/(\d+)/"
-
-    if isinstance(user_links, str):
-        user_links = [user_links]
-
-    df_new = pd.DataFrame({"Link": user_links, "Status": [0] * len(user_links)})
-    df_new["User_ID"] = df_new["Link"].str.extract(pattern)
-
-    df_new = df_new[df_new["User_ID"].notna()].drop_duplicates(subset=["User_ID"])
-
-    if not df_new.empty:
-        with file_lock:
-            if os.path.exists("link_user.csv"):
-                df_old = pd.read_csv("link_user.csv")
-                df_new = pd.concat([df_old, df_new]).drop_duplicates(subset=["User_ID"], keep="first")
-
-            df_new["User_ID"] = df_new["User_ID"].astype(int)
-            df_new = df_new.sort_values(by=["User_ID"])
-            df_new.to_csv("link_user.csv", index=False, mode='w')
-
-
 def main(idx, link_group):
     options = uc.ChromeOptions()
+    options.add_argument("--enable-features=ClipboardReadWrite")
     profile_directory = f"Profile_{idx}"
     if not os.path.exists(profile_directory):
         os.makedirs(profile_directory)
@@ -84,41 +62,61 @@ def main(idx, link_group):
     driver.set_window_position(position_x, position_y)
     # driver.maximize_window()
 
+    driver.execute_script("document.body.style.zoom='100%'")
     driver.get("https://www.facebook.com/")
     confirmation_received.wait()
-    driver.get(link_group + "/members")
-    collected_users = set()
+    driver.get(link_group)
+    driver.execute_script("document.body.style.zoom='25%'")
 
     while True:
         last_height = driver.execute_script("return document.body.scrollHeight")
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(1)
         new_height = driver.execute_script("return document.body.scrollHeight")
-        
-        try:
-            WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.list_item_xpath)))
-            members = driver.find_elements(By.XPATH, config.list_item_xpath)
-        except Exception:
-            print(f"Lỗi 2 ở luồng {idx + 1}")
-            break
-        
-        new_users = []
-        for member in members:
-            try:
-                href_element = member.find_element(By.XPATH, ".//a[@href]")
-                user_link = href_element.get_attribute("href")
-                
-                if user_link not in collected_users:
-                    collected_users.add(user_link)
-                    new_users.append(user_link)
-            except Exception:
-                continue
-        
-        for user_link in new_users:
-            save_user_link(user_link)
-        
         if new_height == last_height:
             break
+
+    try:
+        WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.feed_xpath)))
+        posts = driver.find_elements(By.XPATH, config.feed_xpath)[1:]
+    except Exception:
+        print(f"Lỗi 2 ở luồng {idx + 1}")
+        return
+
+    for post in posts:
+        try:
+            driver.execute_script("arguments[0].scrollIntoView(true);", post)
+            time.sleep(uniform(1, 3))
+        except Exception:
+            print(f"Lỗi 3 ở luồng {idx + 1}")
+            continue
+        time.sleep(1)
+
+        try:
+            WebDriverWait(post, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, config.share_button_xpath))
+            ).click()
+        except Exception:
+            print(f"Lỗi 4 ở luồng {idx + 1}")
+            continue
+        time.sleep(1)
+
+        try:
+            auto_click(driver, config.copy_link_button_xpath, 30)
+        except Exception:
+            print(f"Lỗi 5 ở luồng {idx + 1}")
+            continue
+        time.sleep(1)
+
+        print(driver.execute_script("return navigator.clipboard.readText();"))
+
+        try:
+            ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+        except Exception:
+            print(f"Lỗi 6 ở luồng {idx + 1}")
+            continue
+        time.sleep(1)
+
 
 threads = []
 

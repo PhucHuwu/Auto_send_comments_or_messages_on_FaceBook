@@ -15,7 +15,7 @@ import config
 
 if not os.path.exists('link_user.csv'):
     print("Vui lòng chạy tool cào link fb trước")
-    time.sleep(10)
+    time.sleep(30)
     exit()
 
 df_link_user = pd.read_csv('link_user.csv')
@@ -39,6 +39,7 @@ driver_lock = threading.Lock()
 
 def main(idx):
     options = uc.ChromeOptions()
+    options.add_argument("--disable-popup-blocking")
     profile_directory = f"Profile_{idx}"
     if not os.path.exists(profile_directory):
         os.makedirs(profile_directory)

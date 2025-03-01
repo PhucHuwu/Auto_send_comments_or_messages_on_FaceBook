@@ -13,18 +13,23 @@ from click import auto_click
 import config
 
 
-if not os.path.exists('link_group.csv') or not os.path.exists('text.csv'):
+if not os.path.exists('link_post.csv') or not os.path.exists('text.csv'):
     print("Hãy đảm bảo file excel tồn tại")
     time.sleep(10)
     exit()
 
-df_link_group = pd.read_csv('csv.csv')
-list_link = df_link_group["Link"].dropna().values.tolist()
+df_link_post = pd.read_csv('link_post.csv')
+list_link_post = df_link_post["Link"].dropna().values.tolist()
+
+df_status = pd.read_csv('link_post.csv')
+list_status = df_status["Status"].dropna().values.tolist()
+
 df_text = pd.read_csv('text.csv')
 list_text = df_text["Text"].dropna().values.tolist()
 
 
 driver_lock = threading.Lock()
+file_lock = threading.Lock()
 confirmation_received = threading.Event()
 
 
@@ -58,71 +63,83 @@ def main(idx):
 
     confirmation_received.wait()
 
-    for link in list_link:
+    for idx, link in enumerate(list_link_post):
+        
+        if list_status[idx] == 1:
+            continue
+        
         driver.get(link)
         time.sleep(uniform(1, 3))
 
-        while True:
-            last_height = driver.execute_script("return document.body.scrollHeight")
-            driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
-            time.sleep(1)
-            new_height = driver.execute_script("return document.body.scrollHeight")
-            if new_height == last_height:
-                break
+        # while True:
+        #     last_height = driver.execute_script("return document.body.scrollHeight")
+        #     driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
+        #     time.sleep(1)
+        #     new_height = driver.execute_script("return document.body.scrollHeight")
+        #     if new_height == last_height:
+        #         break
+
+        # try:
+        #     WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.feed_xpath)))
+        #     posts = driver.find_elements(By.XPATH, config.feed_xpath)[1:]
+        # except Exception:
+        #     print(f"Lỗi 2 ở luồng {idx + 1}")
+        #     continue
+
+        # for post in posts:
+        #     try:
+        #         driver.execute_script("arguments[0].scrollIntoView(true);", post)
+        #         time.sleep(uniform(1, 3))
+        #     except Exception:
+        #         print(f"Lỗi 3 ở luồng {idx + 1}")
+        #         continue
 
         try:
-            WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.feed_xpath)))
-            posts = driver.find_elements(By.XPATH, config.feed_xpath)[1:]
+            WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, config.comment_button_xpath))
+            ).click()
         except Exception:
-            print(f"Lỗi 2 ở luồng {idx + 1}")
+            print(f"Lỗi 4 ở luồng {idx + 1}")
             continue
+        time.sleep(uniform(1, 3))
 
-        for post in posts:
-            try:
-                driver.execute_script("arguments[0].scrollIntoView(true);", post)
-                time.sleep(uniform(1, 3))
-            except Exception:
-                print(f"Lỗi 3 ở luồng {idx + 1}")
-                continue
+        try:
+            WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located((By.XPATH, config.text_box_xpath))
+            )
+        except Exception:
+            print(f"Lỗi 5 ở luồng {idx + 1}")
+            continue
+        time.sleep(uniform(1, 3))
 
-            try:
-                WebDriverWait(post, 30).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, config.comment_button_xpath))
-                ).click()
-            except Exception:
-                print(f"Lỗi 4 ở luồng {idx + 1}")
-                continue
+        try:
+            text = choice(list_text)
+            ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
             time.sleep(uniform(1, 3))
-
+        except Exception:
+            print(f"Lỗi 6 ở luồng {idx + 1}")
             try:
-                WebDriverWait(driver, 30).until(
-                    EC.presence_of_element_located((By.XPATH, config.text_box_xpath))
-                )
-            except Exception:
-                print(f"Lỗi 5 ở luồng {idx + 1}")
+                ActionChains(driver).send_keys(Keys.ESCAPE).perform()
                 continue
-            time.sleep(uniform(1, 3))
-
-            try:
-                text = choice(list_text)
-                ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
-                time.sleep(uniform(1, 3))
-            except Exception:
-                print(f"Lỗi 6 ở luồng {idx + 1}")
-                try:
-                    auto_click(driver, config.close_button_xpath, 30)
-                    continue
-                except Exception:
-                    print(f"Lỗi 7 ở luồng {idx + 1}")
-                    continue
-            time.sleep(uniform(1, 3))
-
-            try:
-                auto_click(driver, config.close_button_xpath, 30)
             except Exception:
                 print(f"Lỗi 7 ở luồng {idx + 1}")
                 continue
-            time.sleep(uniform(1, 3))
+        time.sleep(uniform(1, 3))
+
+        try:
+            ActionChains(driver).send_keys(Keys.ESCAPE).perform()
+        except Exception:
+            print(f"Lỗi 7 ở luồng {idx + 1}")
+            continue
+        time.sleep(uniform(1, 3))
+        
+        try:
+            df_status.loc[df_status["Link"] == link, "Status"] = 1
+            with file_lock:
+                df_status.to_csv('link_post.csv', index=False)
+        except Exception:
+            print(f"Lỗi 8 ở luồng {idx + 1}")
+            continue
 
 
 threads = []

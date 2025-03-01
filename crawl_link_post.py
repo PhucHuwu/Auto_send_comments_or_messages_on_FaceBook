@@ -147,7 +147,7 @@ for idx, link_group in enumerate(list_link_group):
     thread.start()
     threads.append(thread)
 
-start_program = input("Nhập 'ok' sau khi đã đăng nhập để bắt đầu quá trình spam: ")
+start_program = input("Nhập 'ok' sau khi đã đăng nhập để bắt đầu quá trình cào data: ")
 if start_program.lower().strip() == "ok":
     confirmation_received.set()
 

@@ -55,9 +55,7 @@ def get_token(two_fa_token):
 
 def is_logged_out(driver):
     try:
-        WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '[id="email"]'))
-        )
+        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, '[id="email"]')))
         return True
     except:
         return False
@@ -81,15 +79,14 @@ def log_in(driver, thread_id, via_index):
         return False
 
     try:
-        ActionChains(driver).send_keys(account_id).send_keys(Keys.TAB).perform()
-        ActionChains(driver).send_keys(password).send_keys(Keys.ENTER).perform()
+        ActionChains(driver).send_keys(account_id + Keys.TAB + password + Keys.ENTER).perform()
     except:
         print(f"Lỗi 5 ở luồng {thread_id + 1}")
         return False
     time.sleep(uniform(1, 3))
 
     try:
-        ActionChains(driver).send_keys(two_fa_token).send_keys(Keys.ENTER).perform()
+        ActionChains(driver).send_keys(two_fa_token + Keys.ENTER).perform()
     except:
         print(f"Lỗi 6 ở luồng {thread_id + 1}")
     time.sleep(uniform(1, 3))
@@ -195,25 +192,23 @@ def main(thread_id, user_chunk, status_chunk):
 
             try:
                 text = choice(list_text)
-                ActionChains(driver).send_keys(text).send_keys(Keys.ENTER).perform()
-                time.sleep(1)
-
-                # sent_message_xpath = f'//div[contains(text(), "{text}")]'
-                # WebDriverWait(driver, 5).until(
-                #     EC.presence_of_element_located((By.XPATH, sent_message_xpath))
-                # )
-                # messages_sent += 1
-                
-                status_chunk[idx] = 1
-                with driver_lock:
-                    df_link_user = pd.read_csv('link_user.csv')
-                    df_link_user.loc[df_link_user["Link"] == link, "Status"] = 1
-                    df_link_user.to_csv('link_user.csv', index=False)
-
+                ActionChains(driver).send_keys(text + Keys.ENTER).perform()
+                time.sleep(2)
+                messages_sent += 1
             except Exception:
                 print(f"Lỗi 10 ở luồng {thread_id + 1}")
                 continue
-            time.sleep(uniform(1, 3))
+                    
+            with driver_lock:
+                try:
+                    df_link_user = pd.read_csv('link_user.csv')
+                    df_link_user.loc[df_link_user["Link"] == link, "Status"] = 1
+                    df_link_user.to_csv('link_user.csv', index=False)
+                except Exception:
+                    print(f"Lỗi 11 ở luồng {thread_id + 1}")
+                    continue
+                
+            status_chunk[idx] = 1
 
         via_index += num_threads
         messages_sent = 0

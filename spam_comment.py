@@ -95,7 +95,7 @@ def update_post_status(link_post):
         df_link_post.to_csv('link_post.csv', index=False)
 
 
-def log_in(driver, thread_id, via, via_status_chunk, via_idx):    
+def log_in(driver, thread_id, via, via_status_chunk, via_idx):  
     list_via_split = via.split('|')
     account_id, password, two_fa_token = list_via_split[0], list_via_split[1], get_token(thread_id, list_via_split[2])
 

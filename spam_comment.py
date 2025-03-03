@@ -195,8 +195,6 @@ def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
     driver.set_window_size(window_width, window_height)
     driver.set_window_position(position_x, position_y)
     # driver.maximize_window()
-
-    driver.execute_script("document.body.style.zoom='25%'")
     
     # try:
     #     driver.get("chrome://settings/clearBrowserData")
@@ -248,9 +246,10 @@ def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
                 break
 
             driver.get(link_post)
+            driver.execute_script("document.body.style.zoom='25%'")
             time.sleep(uniform(2, 5))
             ActionChains(driver).send_keys(Keys.ESCAPE * 5).perform()
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
             try:
                 WebDriverWait(driver, 30).until(

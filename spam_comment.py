@@ -196,6 +196,8 @@ def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
     driver.set_window_position(position_x, position_y)
     # driver.maximize_window()
 
+    driver.execute_script("document.body.style.zoom='25%'")
+    
     # try:
     #     driver.get("chrome://settings/clearBrowserData")
     #     dropdown = WebDriverWait(driver, 10).until(

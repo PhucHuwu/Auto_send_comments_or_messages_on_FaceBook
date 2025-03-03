@@ -277,6 +277,7 @@ threads = []
 for idx in range(num_threads):
     thread = threading.Thread(target=main, args=(idx, link_user_chunks[idx], link_user_status_chunks[idx], via_chunks[idx], via_status_chunks[idx]))
     thread.start()
+    time.sleep(1)
     threads.append(thread)
 
 for thread in threads:

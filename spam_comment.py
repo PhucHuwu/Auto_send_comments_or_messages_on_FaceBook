@@ -4,7 +4,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import Select
 import time
 import threading
 import os
@@ -29,11 +28,11 @@ if sum(list_status) == len(list_link_post):
     time.sleep(10)
     exit()
 
-df_text = pd.read_csv('text.csv')
-list_text = df_text["Text"].dropna().values.tolist()
+with open('text.txt', 'r', encoding='utf-8') as file:
+    list_text = file.read().splitlines()
 
 if len(list_text) == 0:
-    print("Vui lòng thêm kịch bản vào file text.csv")
+    print("Vui lòng thêm kịch bản vào file text.txt")
     time.sleep(10)
     exit()
 

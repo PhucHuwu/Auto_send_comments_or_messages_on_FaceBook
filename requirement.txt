@@ -1,0 +1,5 @@
+selenium
+undetected_chromedriver
+pandas
+pyperclip
+requests

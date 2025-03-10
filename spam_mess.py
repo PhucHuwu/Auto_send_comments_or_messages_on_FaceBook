@@ -47,7 +47,7 @@ if len(list_text) == 0:
     exit()
 
 max_messages_per_via = 20
-num_threads = 2  # min(len(list_via), len(list_link_user) // max_messages_per_via, os.cpu_count())
+num_threads = 4 # min(len(list_via), len(list_link_user) // max_messages_per_via, os.cpu_count())
 
 link_user_chunks = [list_link_user[i::num_threads] for i in range(num_threads)]
 link_user_status_chunks = [list_status[i::num_threads] for i in range(num_threads)]
@@ -96,11 +96,7 @@ def update_link_user_status(link_user):
 
 def log_in(driver, thread_id, via, via_status_chunk, via_idx):
     list_via_split = via.split('|')
-    account_id, password, two_fa_token = list_via_split[0], list_via_split[1], get_token(thread_id, list_via_split[2])
-
-    time.sleep(3)
-    if two_fa_token is None:
-        return False
+    account_id, password = list_via_split[0], list_via_split[1]
 
     try:
         WebDriverWait(driver, 30).until(
@@ -116,30 +112,92 @@ def log_in(driver, thread_id, via, via_status_chunk, via_idx):
         print(f"Không thể nhập tài khoản hoặc mật khẩu ở luồng {thread_id + 1}")
         return False
     time.sleep(uniform(2, 5))
+    driver.execute_script("document.body.style.zoom='25%'")
 
     try:
-        WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'Email hoặc số di động bạn nhập không kết nối với tài khoản nào')]"))
-        )
-        print(f"Tài khoản ở luồng {thread_id + 1} không tồn tại")
-        time.sleep(uniform(1, 3))
-        update_via_status(via, "Invalid")
-        via_status_chunk[via_idx] = "Invalid"
-        return False
+        found = False
+        try:
+            WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'Email hoặc số di động bạn nhập không kết nối với tài khoản nào')]"))
+            )
+            found = True
+        except:
+            try:
+                WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'The email address or mobile number you entered isn't connected to an account')]"))
+                )
+                found = True
+            except:
+                pass
+        if found:
+            print(f"Tài khoản ở luồng {thread_id + 1} không tồn tại")
+            time.sleep(uniform(1, 3))
+            update_via_status(via, "Invalid")
+            via_status_chunk[via_idx] = "Invalid"
+            return False
     except:
         pass
 
     try:
-        WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'Mật khẩu bạn nhập không chính xác')]"))
-        )
-        print(f"Mật khẩu ở luồng {thread_id + 1} không chính xác")
-        time.sleep(uniform(1, 3))
-        update_via_status(via, "Wrong password")
-        via_status_chunk[via_idx] = "Wrong password"
-        return False
+        found = False
+        try:
+            WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'Mật khẩu bạn nhập không chính xác')]"))
+            )
+            found = True
+        except:
+            try:
+                WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'The password that you've entered is incorrect')]"))
+                )
+                found = True
+            except:
+                pass
+        if found:
+            print(f"Mật khẩu ở luồng {thread_id + 1} không chính xác")
+            time.sleep(uniform(1, 3))
+            update_via_status(via, "Wrong password")
+            via_status_chunk[via_idx] = "Wrong password"
+            return False
     except:
         pass
+
+    try:
+        found = False
+        try:
+            WebDriverWait(driver, 5).until(
+                EC.visibility_of_element_located((By.XPATH, "//*[contains(text(), 'Kiểm tra thông báo trên thiết bị khác')]"))
+            )
+            found = True
+        except:
+            try:
+                WebDriverWait(driver, 5).until(
+                    EC.visibility_of_element_located((By.XPATH, "//*[contains(text(), 'Check your notifications on another device')]"))
+                )
+                found = True
+            except:
+                pass
+        if found:
+            if not auto_click(driver, config.try_another_way_button_xpath, 5, 1):
+                auto_click(driver, config.try_another_way_button_xpath_eng, 5, 1)
+            time.sleep(1)
+
+            try:
+                element = driver.find_element(By.XPATH, config.authentication_button_xpath)
+            except:
+                element = driver.find_element(By.XPATH, config.authentication_button_xpath_eng)
+            element.find_element(By.XPATH, config.auth_check_box_xpath).click()
+            time.sleep(1)
+
+            if not auto_click(driver, config.continue_button_xpath, 5, 1):
+                auto_click(driver, config.continue_button_xpath_eng, 5, 1)
+    except:
+        pass
+
+    two_fa_token = get_token(thread_id, list_via_split[2])
+    time.sleep(3)
+    if two_fa_token is None:
+        return False
 
     try:
         ActionChains(driver).send_keys(two_fa_token + Keys.ENTER).perform()
@@ -147,24 +205,40 @@ def log_in(driver, thread_id, via, via_status_chunk, via_idx):
         print(f"Không thể nhập mã 2fa ở luồng {thread_id + 1}")
     time.sleep(5)
 
+    ActionChains(driver).send_keys(Keys.ESCAPE * 5).perform()
+    
     if "checkpoint" in driver.current_url:
         print(f"Tài khoản ở luồng {thread_id + 1} đã bị checkpoint, đang thực hiện đăng xuất")
         time.sleep(uniform(1, 3))
         update_via_status(via, "Checkpoint")
         via_status_chunk[via_idx] = "Checkpoint"
+
         try:
-            WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, config.checkpoint_account_logout_button_xpath))
-            ).click()
-            auto_click(driver, config.logout_button_xpath, 5, 1)
+            try:
+                WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, config.checkpoint_account_logout_button_xpath))
+                ).click()
+            except:
+                WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, config.checkpoint_account_logout_button_xpath_eng))
+                ).click()
         except:
             print(f"Lỗi khi thực hiện đăng xuất tài khoản checkpoint ở luồng {thread_id + 1}")
+            return False
+    
+        if not auto_click(driver, config.logout_button_xpath, 5, 1):
+            if not auto_click(driver, config.logout_button_xpath_eng, 5, 1):
+                print(f"Lỗi khi thực hiện đăng xuất tài khoản checkpoint ở luồng {thread_id + 1}")
+                return False
+        if not auto_click(driver, config.logout_disable_180d_button_xpath, 5, 1):
+            if not auto_click(driver, config.logout_disable_180d_button_xpath_eng, 5, 1):
+                print(f"Lỗi khi thực hiện đăng xuất tài khoản checkpoint ở luồng {thread_id + 1}")
+                return False
         return False
 
-    try:
-        auto_click(driver, config.trust_device_button_xpath, 5, 1)
-    except:
-        print(f"Lỗi 7 ở luồng {thread_id + 1}")
+    if not auto_click(driver, config.trust_device_button_xpath, 5, 1):
+        if not auto_click(driver, config.trust_device_button_xpath_eng, 5, 1):
+            print(f"Đã tin cậy thiết bị ở luồng {thread_id + 1}")
 
     return True
 
@@ -209,20 +283,29 @@ def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_stat
             if not log_in(driver, thread_id, via, via_status_chunk, via_idx):
                 continue
         else:
+            driver.get("https://www.facebook.com/Phuchuwu/?locale=vi-VN")
             try:
-                if auto_click(driver, config.your_profile_button_xpath, 2, 1) == False:
-                    WebDriverWait(driver, 30).until(
-                        EC.element_to_be_clickable((By.CSS_SELECTOR, config.checkpoint_account_logout_button_xpath))
-                    ).click()
+                if not auto_click(driver, config.your_profile_button_xpath, 2, 1):
+                    try:
+                        WebDriverWait(driver, 10).until(
+                            EC.element_to_be_clickable((By.CSS_SELECTOR, config.checkpoint_account_logout_button_xpath))
+                        ).click()
+                    except:
+                        WebDriverWait(driver, 10).until(
+                            EC.element_to_be_clickable((By.CSS_SELECTOR, config.checkpoint_account_logout_button_xpath_eng))
+                        ).click()
             except Exception:
                 print(f"Lỗi khi thực hiện đăng xuất tài khoản ở luồng {thread_id + 1}")
                 continue
 
-            try:
-                auto_click(driver, config.logout_button_xpath, 5, 1)
-            except Exception:
-                print(f"Lỗi khi thực hiện đăng xuất tài khoản ở luồng {thread_id + 1}")
-                continue
+            if not auto_click(driver, config.logout_button_xpath, 5, 1):
+                if not auto_click(driver, config.logout_button_xpath_eng, 5, 1):
+                    print(f"Lỗi khi thực hiện đăng xuất tài khoản ở luồng {thread_id + 1}")
+                    continue
+                
+            if not auto_click(driver, config.logout_disable_180d_button_xpath, 5, 1):
+                if not auto_click(driver, config.logout_disable_180d_button_xpath_eng, 5, 1):
+                    continue
             continue
 
         for user_idx, link_user in enumerate(link_user_chunk):
@@ -232,25 +315,33 @@ def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_stat
             if messages_sent >= max_messages_per_via:
                 break
 
-            driver.get(link_user)
+            driver.get(link_user + "?locale=vi-VN")
             driver.execute_script("document.body.style.zoom='25%'")
-            time.sleep(uniform(2, 5))
+            time.sleep(uniform(5, 15))
             ActionChains(driver).send_keys(Keys.ESCAPE * 5).perform()
-            # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
-            try:
-                auto_click(driver, config.message_button_xpath, 15, 1)
-            except Exception:
+            if not auto_click(driver, config.message_button_xpath, 15, 1):
                 print(f"Không tìm thấy nút nhắn tin ở luồng {thread_id + 1}")
                 continue
-            time.sleep(uniform(1, 3))
+            time.sleep(uniform(2, 5))
 
             try:
-                auto_click(driver, config.message_text_box_xpath, 15, 1)
-            except Exception:
-                print(f"Không tìm thấy ô nhập tin nhắn ở luồng {thread_id + 1}")
+                WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Bạn đã gửi hết số tin nhắn đang chờ cho phép')]"))
+                )
+                print(f"Tài khoản đã dính spam, không thể gửi tin nhắn ở luồng {thread_id + 1}")
+                update_via_status(via, "Spam")
+                via_status_chunk[via_idx] = "Spam"
+                break
+            except:
+                pass
+
+            if not auto_click(driver, config.message_text_box_xpath, 5, 1):
+                print(f"Không thấy ô nhập tin nhắn ở luồng {thread_id + 1}")
+                update_link_user_status(link_user)
+                link_user_status_chunk[idx] = 1
                 continue
-            time.sleep(uniform(1, 3))
+            time.sleep(uniform(2, 5))
 
             try:
                 text = choice(list_text)
@@ -262,12 +353,7 @@ def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_stat
                 print(f"Không thể gửi tin nhắn ở luồng {thread_id + 1}")
                 continue
 
-            try:
-                update_link_user_status(link_user)
-            except Exception:
-                print(f"Lưu file csv thất bại ở luồng {thread_id + 1}")
-                continue
-
+            update_link_user_status(link_user)
             link_user_status_chunk[idx] = 1
 
         messages_sent = 0

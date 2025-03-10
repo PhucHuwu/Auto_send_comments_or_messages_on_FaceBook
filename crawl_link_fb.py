@@ -87,7 +87,7 @@ def main(idx, link_group):
     driver.execute_script("document.body.style.zoom='100%'")
     driver.get("https://www.facebook.com/")
     confirmation_received.wait()
-    driver.get(link_group + "/members")
+    driver.get(link_group + "/members/?locale=vi-VN")
     driver.execute_script("document.body.style.zoom='25%'")
     collected_users = set()
 

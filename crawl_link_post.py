@@ -73,8 +73,8 @@ def main(idx, link_group):
 
     screen_width = driver.execute_script("return window.screen.availWidth;")
     screen_height = driver.execute_script("return window.screen.availHeight;")
-    window_width = screen_width // 3
-    window_height = screen_height // 2
+    window_width = screen_width // 5
+    window_height = screen_height
     position_x = idx * window_width // 20
     position_y = 0
 
@@ -85,24 +85,28 @@ def main(idx, link_group):
     driver.execute_script("document.body.style.zoom='100%'")
     driver.get("https://www.facebook.com/")
     confirmation_received.wait()
-    driver.get(link_group)
+    driver.get(link_group + "?locale=vi-VN")
     driver.execute_script("document.body.style.zoom='25%'")
 
+    scroll_times = 100
+    print(f"Chương trình sẽ thực hiện cuộn trang {scroll_times} lần để load hết các bài viết sau đó mới lưu link")
     while True:
         last_height = driver.execute_script("return document.body.scrollHeight")
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(2)
         new_height = driver.execute_script("return document.body.scrollHeight")
-        if new_height == last_height:
+        scroll_times -= 1
+        print(f"Số lần cuộn còn lại: {scroll_times}")
+        if new_height == last_height or scroll_times == 0:
             break
-
+        
     try:
         WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.feed_xpath)))
         posts = driver.find_elements(By.XPATH, config.feed_xpath)[1:]
     except Exception:
         print(f"Lỗi 2 ở luồng {idx + 1}")
         return
-
+    
     for post in posts:
         try:
             driver.execute_script("arguments[0].scrollIntoView(true);", post)

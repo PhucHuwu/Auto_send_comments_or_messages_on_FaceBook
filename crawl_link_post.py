@@ -124,9 +124,7 @@ def main(idx, link_group):
             continue
         time.sleep(1)
 
-        try:
-            auto_click(driver, config.copy_link_button_xpath, 30)
-        except Exception:
+        if not auto_click(driver, config.copy_link_button_xpath, 30):
             print(f"Lỗi 5 ở luồng {idx + 1}")
             continue
 

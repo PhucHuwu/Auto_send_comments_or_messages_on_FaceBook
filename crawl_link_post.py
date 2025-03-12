@@ -66,7 +66,7 @@ def main(idx, link_group):
         try:
             options.user_data_dir = profile_directory
             driver = uc.Chrome(options=options)
-        except Exception:
+        except:
             print(f"Lỗi 1 ở luồng {idx + 1}")
             time.sleep(180)
             return
@@ -103,7 +103,7 @@ def main(idx, link_group):
     try:
         WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.feed_xpath)))
         posts = driver.find_elements(By.XPATH, config.feed_xpath)[1:]
-    except Exception:
+    except:
         print(f"Lỗi 2 ở luồng {idx + 1}")
         return
     
@@ -111,7 +111,7 @@ def main(idx, link_group):
         try:
             driver.execute_script("arguments[0].scrollIntoView(true);", post)
             time.sleep(uniform(1, 3))
-        except Exception:
+        except:
             print(f"Lỗi 3 ở luồng {idx + 1}")
             continue
 
@@ -119,7 +119,7 @@ def main(idx, link_group):
             WebDriverWait(post, 30).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, config.share_button_xpath))
             ).click()
-        except Exception:
+        except:
             print(f"Lỗi 4 ở luồng {idx + 1}")
             continue
         time.sleep(1)
@@ -130,7 +130,7 @@ def main(idx, link_group):
 
         try:
             ActionChains(driver).send_keys(Keys.ESCAPE).perform()
-        except Exception:
+        except:
             print(f"Lỗi 6 ở luồng {idx + 1}")
             continue
 
@@ -138,7 +138,7 @@ def main(idx, link_group):
         try:
             link_post = requests.get(link_post, allow_redirects=True)
             save_post_link(link_post.url)
-        except Exception:
+        except:
             print(f"Lỗi 6 ở luồng {idx + 1}")
 
 

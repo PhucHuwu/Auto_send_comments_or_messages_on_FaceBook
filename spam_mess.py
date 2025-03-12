@@ -253,7 +253,7 @@ def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_stat
         try:
             options.user_data_dir = profile_directory
             driver = uc.Chrome(options=options)
-        except Exception:
+        except:
             print(f"Không thể khởi tạo trình duyệt ở luồng {thread_id + 1}, vui lòng update Chrome")
             time.sleep(180)
             return
@@ -294,7 +294,7 @@ def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_stat
                         WebDriverWait(driver, 10).until(
                             EC.element_to_be_clickable((By.CSS_SELECTOR, config.checkpoint_account_logout_button_xpath_eng))
                         ).click()
-            except Exception:
+            except:
                 print(f"Lỗi khi thực hiện đăng xuất tài khoản ở luồng {thread_id + 1}")
                 continue
 
@@ -349,7 +349,7 @@ def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_stat
                 time.sleep(2)
                 messages_sent += 1
                 print(f"Đã gửi {messages_sent} tin nhắn bằng tài khoản {via.split('|')[0][-4:]} ở luồng {thread_id + 1}")
-            except Exception:
+            except:
                 print(f"Không thể gửi tin nhắn ở luồng {thread_id + 1}")
                 continue
 

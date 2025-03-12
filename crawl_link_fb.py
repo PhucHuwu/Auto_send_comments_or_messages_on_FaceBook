@@ -67,7 +67,7 @@ def main(idx, link_group):
         try:
             options.user_data_dir = profile_directory
             driver = uc.Chrome(options=options)
-        except Exception:
+        except:
             print(f"Lỗi 1 ở luồng {idx + 1}")
             time.sleep(180)
             return
@@ -99,7 +99,7 @@ def main(idx, link_group):
         try:
             WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.list_item_xpath)))
             members = driver.find_elements(By.XPATH, config.list_item_xpath)
-        except Exception:
+        except:
             print(f"Lỗi 2 ở luồng {idx + 1}")
             break
         
@@ -112,7 +112,7 @@ def main(idx, link_group):
                 if user_link not in collected_users:
                     collected_users.add(user_link)
                     new_users.append(user_link)
-            except Exception:
+            except:
                 continue
         
         for user_link in new_users:

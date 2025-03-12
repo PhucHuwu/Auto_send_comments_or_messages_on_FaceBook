@@ -14,12 +14,12 @@ from click import auto_click
 import config
 
 
-if not os.path.exists('link_post.csv'):
+if not os.path.exists('link_bai_viet.csv'):
     print("Vui lòng chạy tool cào link bài viết trước")
     time.sleep(30)
     exit()
 
-df_link_post = pd.read_csv('link_post.csv')
+df_link_post = pd.read_csv('link_bai_viet.csv')
 list_link_post = df_link_post["Link"].dropna().values.tolist()
 list_status = df_link_post["Status"].dropna().values.tolist()
 
@@ -28,11 +28,11 @@ if sum(list_status) == len(list_link_post):
     time.sleep(10)
     exit()
 
-with open('text.txt', 'r', encoding='utf-8') as file:
+with open('kich_ban.txt', 'r', encoding='utf-8') as file:
     list_text = file.read().splitlines()
 
 if len(list_text) == 0:
-    print("Vui lòng thêm kịch bản vào file text.txt")
+    print("Vui lòng thêm kịch bản vào file kich_ban.txt")
     time.sleep(10)
     exit()
 
@@ -89,9 +89,9 @@ def update_via_status(via, status):
 
 def update_post_status(link_post):
     with file_lock:
-        df_link_post = pd.read_csv('link_post.csv')
+        df_link_post = pd.read_csv('link_bai_viet.csv')
         df_link_post.loc[df_link_post["Link"] == link_post, "Status"] = 1
-        df_link_post.to_csv('link_post.csv', index=False)
+        df_link_post.to_csv('link_bai_viet.csv', index=False)
 
 
 def log_in(driver, thread_id, via, via_status_chunk, via_idx):

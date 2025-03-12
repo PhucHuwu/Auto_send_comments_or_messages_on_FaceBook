@@ -14,12 +14,12 @@ from click import auto_click
 import config
 
 
-if not os.path.exists('link_user.csv'):
+if not os.path.exists('link_facebook.csv'):
     print("Vui lòng chạy tool cào link fb trước")
     time.sleep(30)
     exit()
 
-df_link_user = pd.read_csv('link_user.csv')
+df_link_user = pd.read_csv('link_facebook.csv')
 list_link_user = df_link_user["Link"].dropna().values.tolist()
 list_status = df_link_user["Status"].dropna().values.tolist()
 
@@ -28,11 +28,11 @@ if sum(list_status) == len(list_link_user):
     time.sleep(10)
     exit()
 
-with open('text.txt', 'r', encoding='utf-8') as file:
+with open('kich_ban.txt', 'r', encoding='utf-8') as file:
     list_text = file.read().splitlines()
 
 if len(list_text) == 0:
-    print("Vui lòng thêm kịch bản vào file text.txt")
+    print("Vui lòng thêm kịch bản vào file kich_ban.txt")
     time.sleep(10)
     exit()
 
@@ -89,9 +89,9 @@ def update_via_status(via, status):
 
 def update_link_user_status(link_user):
     with file_lock:
-        df_link_user = pd.read_csv('link_user.csv')
+        df_link_user = pd.read_csv('link_facebook.csv')
         df_link_user.loc[df_link_user["Link"] == link_user, "Status"] = 1
-        df_link_user.to_csv('link_user.csv', index=False)
+        df_link_user.to_csv('link_facebook.csv', index=False)
 
 
 def log_in(driver, thread_id, via, via_status_chunk, via_idx):

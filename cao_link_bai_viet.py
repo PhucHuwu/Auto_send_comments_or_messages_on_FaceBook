@@ -15,20 +15,20 @@ from click import auto_click
 import config
 
 
-if not os.path.exists('link_group.csv'):
+if not os.path.exists('link_nhom.csv'):
     print("Hãy đảm bảo file excel tồn tại")
     time.sleep(10)
     exit()
 
-if not os.path.exists("link_post.csv"):
+if not os.path.exists("link_bai_viet.csv"):
     data = {
         "Link": [],
         "Status": [],
     }
     df = pd.DataFrame(data)
-    df.to_csv("link_post.csv", index=False)
+    df.to_csv("link_bai_viet.csv", index=False)
 
-df = pd.read_csv('link_group.csv')
+df = pd.read_csv('link_nhom.csv')
 list_link_group = df["Link"].dropna().values.tolist()
 
 
@@ -42,15 +42,15 @@ def save_post_link(link_post):
         link_post = link_post.split("permalink/")[0] + "permalink/" + link_post.split("permalink/")[1].split("/")[0] + "/"
 
     with file_lock:
-        if os.path.exists("link_post.csv"):
-            df_old = pd.read_csv("link_post.csv")
+        if os.path.exists("link_bai_viet.csv"):
+            df_old = pd.read_csv("link_bai_viet.csv")
         else:
             df_old = pd.DataFrame(columns=["Link", "Status"])
 
         if link_post not in df_old["Link"].values:
             new_data = pd.DataFrame([{"Link": link_post, "Status": 0}])
             df_new = pd.concat([df_old, new_data], ignore_index=True)
-            df_new.to_csv("link_post.csv", index=False)
+            df_new.to_csv("link_bai_viet.csv", index=False)
 
 
 def main(idx, link_group):

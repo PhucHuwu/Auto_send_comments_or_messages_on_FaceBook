@@ -308,6 +308,8 @@ def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_stat
                     continue
             continue
 
+        print(f"luồng {thread_id + 1} đang chạy tài khoản {via.split('|')[0][-4:]}")
+
         for user_idx, link_user in enumerate(link_user_chunk):
             if link_user_status_chunk[user_idx] == 1:
                 continue
@@ -317,13 +319,13 @@ def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_stat
 
             driver.get(link_user + "?locale=vi-VN")
             driver.execute_script("document.body.style.zoom='25%'")
-            time.sleep(uniform(5, 15))
+            time.sleep(uniform(15, 60))
             ActionChains(driver).send_keys(Keys.ESCAPE * 5).perform()
 
             if not auto_click(driver, config.message_button_xpath, 15, 1):
                 print(f"Không tìm thấy nút nhắn tin ở luồng {thread_id + 1}")
                 continue
-            time.sleep(uniform(2, 5))
+            time.sleep(uniform(2, 10))
 
             try:
                 WebDriverWait(driver, 10).until(
@@ -341,11 +343,17 @@ def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_stat
                 update_link_user_status(link_user)
                 link_user_status_chunk[idx] = 1
                 continue
-            time.sleep(uniform(2, 5))
+            time.sleep(uniform(2, 10))
 
             try:
                 text = choice(list_text)
-                ActionChains(driver).send_keys(text + Keys.ENTER).perform()
+                if len(text) > 130:
+                    text_split = text.split('=')
+                    for i in range(len(text_split)):
+                        ActionChains(driver).send_keys(text_split[i]).perform()
+                        ActionChains(driver).send_keys(Keys.SHIFT + Keys.ENTER).perform()
+                else:
+                    ActionChains(driver).send_keys(text + Keys.ENTER).perform()
                 time.sleep(2)
                 messages_sent += 1
                 print(f"Đã gửi {messages_sent} tin nhắn bằng tài khoản {via.split('|')[0][-4:]} ở luồng {thread_id + 1}")

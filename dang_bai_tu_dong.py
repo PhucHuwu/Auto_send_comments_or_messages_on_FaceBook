@@ -9,22 +9,28 @@ import threading
 import os
 import pandas as pd
 import requests
-from random import uniform, choice
+from random import uniform, choice, randint
 from click import auto_click
 import config
 
 
-if not os.path.exists('link_bai_viet.csv'):
-    print("Vui lòng chạy tool cào link bài viết trước")
+if not os.path.exists('link_nhom_dang_bai.csv'):
+    data = {
+        "Link": [],
+        "Status": []
+    }
+    df_link_group = pd.DataFrame(data)
+    df_link_group.to_csv('link_nhom_dang_bai.csv', index=False)
+    print("File link_nhom_dang_bai.csv vừa được tạo, vui lòng thêm link nhóm vào file link_nhom_dang_bai.csv")
     time.sleep(30)
     exit()
 
-df_link_post = pd.read_csv('link_bai_viet.csv')
-list_link_post = df_link_post["Link"].dropna().values.tolist()
-list_status = df_link_post["Status"].dropna().values.tolist()
+df_link_group = pd.read_csv('link_nhom_dang_bai.csv')
+list_link_group = df_link_group["Link"].dropna().values.tolist()
+list_status = df_link_group["Status"].dropna().values.tolist()
 
-if sum(list_status) == len(list_link_post):
-    print("Tất cả bài viết đã được spam, vui lòng chạy tool để cào link bài viết mới")
+if sum(list_status) == len(df_link_group):
+    print("Tất cả nhóm đều đã đăng bài, vui lòng thêm link nhóm vào file link_nhom_dang_bai.csv hoặc sửa Status = 0 để đăng bài ở nhóm đó 1 lần nữa")
     time.sleep(10)
     exit()
 
@@ -46,11 +52,11 @@ if len(list_via) == 0:
     time.sleep(10)
     exit()
 
-max_comments_per_via = 20
+max_groups_per_via = 5
 num_threads = len(list_via) // 4
 
-post_chunks = [list_link_post[i::num_threads] for i in range(num_threads)]
-post_status_chunks = [list_status[i::num_threads] for i in range(num_threads)]
+group_chunks = [list_link_group[i::num_threads] for i in range(num_threads)]
+group_status_chunks = [list_status[i::num_threads] for i in range(num_threads)]
 via_chunks = [list_via[i::num_threads] for i in range(num_threads)]
 via_status_chunks = [list_status_via[i::num_threads] for i in range(num_threads)]
 
@@ -87,11 +93,11 @@ def update_via_status(via, status):
         df_list_via.to_csv('via.csv', index=False)
 
 
-def update_post_status(link_post):
+def update_group_status(link_group):
     with file_lock:
-        df_link_post = pd.read_csv('link_bai_viet.csv')
-        df_link_post.loc[df_link_post["Link"] == link_post, "Status"] = 1
-        df_link_post.to_csv('link_bai_viet.csv', index=False)
+        df_link_group = pd.read_csv('link_nhom_dang_bai.csv')
+        df_link_group.loc[df_link_group["Link"] == link_group, "Status"] = 1
+        df_link_group.to_csv('link_nhom_dang_bai.csv', index=False)
 
 
 def log_in(driver, thread_id, via, via_status_chunk, via_idx):
@@ -244,7 +250,7 @@ def log_in(driver, thread_id, via, via_status_chunk, via_idx):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
+def main(thread_id, group_chunk, group_status_chunk, via_chunk, via_status_chunk):
     options = uc.ChromeOptions()
     profile_directory = f"Profile_{thread_id + 1}"
     if not os.path.exists(profile_directory):
@@ -268,9 +274,8 @@ def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
 
     driver.set_window_size(window_width, window_height)
     driver.set_window_position(position_x, position_y)
-    # driver.maximize_window()
 
-    comments_sent = 0
+    post_posted = 0
 
     # -----------------------------------------------------------------------------------------------------------------
     for via_idx, via in enumerate(via_chunk):
@@ -279,7 +284,7 @@ def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
 
         driver.get("https://www.facebook.com/?locale=vi-VN")
         time.sleep(3)
-        
+
         if is_logged_out(driver):
             if not log_in(driver, thread_id, via, via_status_chunk, via_idx):
                 continue
@@ -311,77 +316,51 @@ def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
         
         print(f"luồng {thread_id + 1} đang chạy tài khoản {via.split('|')[0][-4:]}")
         
-        for post_idx, link_post in enumerate(post_chunk):
-            if post_status_chunk[post_idx] == 1:
+        for group_idx, link_group in enumerate(group_chunk):
+            if group_status_chunk[group_idx] == 1:
                 continue
 
-            if comments_sent >= max_comments_per_via:
+            if post_posted >= max_groups_per_via:
                 break
 
-            driver.get(link_post + "?locale=vi-VN")
-            driver.execute_script("document.body.style.zoom='25%'")
-            time.sleep(uniform(15, 60))
+            driver.get(link_group + "?locale=vi-VN")
+            driver.execute_script("document.body.style.zoom='50%'")
+            time.sleep(uniform(2, 5))
             ActionChains(driver).send_keys(Keys.ESCAPE * 5).perform()
+            for _ in range(randint(3, 10)):
+                driver.execute_script(f"window.scrollBy(0, {randint(25, 100)});")
+            driver.execute_script("window.scrollTo(0, 0);")
+            time.sleep(uniform(5, 10))
+            # ---------------------------------------------------------------------------------------------------------
+            auto_click(driver, config.write_something_text_box_xpath, 5, 1)
+            time.sleep(1)
 
-            try:
-                WebDriverWait(driver, 30).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, config.comment_button_xpath))
-                ).click()
-            except:
-                print(f"Không thể tìm thấy nút bình luận ở luồng {thread_id + 1}")
-                continue
-            time.sleep(uniform(2, 10))
+            text = choice(list_text)
+            if len(text) > 130:
+                text_split = text.split('=')
+                for i in range(len(text_split)):
+                    ActionChains(driver).send_keys(text_split[i]).perform()
+                    ActionChains(driver).send_keys(Keys.ENTER).perform()
+            else:
+                ActionChains(driver).send_keys(text).perform()
+                auto_click(driver, config.select_color_button_xpath, 5, 1)
+                auto_click(driver, config.color_select_xpath, 5, 1)
 
-            try:
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                WebDriverWait(driver, 30).until(
-                    EC.presence_of_element_located((By.XPATH, config.text_box_xpath))
-                )
-            except:
-                print(f"Không tìm thấy ô nhập bình luận ở luồng {thread_id + 1}")
-                update_post_status(link_post)
-                post_status_chunk[post_idx] = 1
-                continue
-            time.sleep(uniform(2, 10))
-
-            try:
-                text = choice(list_text)
-                if len(text) > 130:
-                    text_split = text.split('=')
-                    for i in range(len(text_split)):
-                        ActionChains(driver).send_keys(text_split[i]).perform()
-                        ActionChains(driver).send_keys(Keys.SHIFT + Keys.ENTER).perform()
-                else:
-                    ActionChains(driver).send_keys(text + Keys.ENTER).perform()
-                time.sleep(2)
-                comments_sent += 1
-                print(f"Đã bình luận {comments_sent} bình luận bằng tài khoản {via.split('|')[0][-4:]} ở luồng {thread_id + 1}")
-            except:
-                print(f"Không thể nhập bình luận ở luồng {thread_id + 1}")
-                try:
-                    ActionChains(driver).send_keys(Keys.ESCAPE).perform()
-                    continue
-                except:
-                    print(f"Không thể hủy bình luận ở luồng {thread_id + 1}")
-                    continue
-            time.sleep(uniform(2, 10))
-
-            try:
-                ActionChains(driver).send_keys(Keys.ESCAPE).perform()
-            except:
-                print(f"Không thể quay lại màn hình khi đã bình luận xong ở luồng {thread_id + 1}")
-                continue
-            time.sleep(uniform(2, 10))
-
-            update_post_status(link_post)
-            post_status_chunk[post_idx] = 1
-
-        comments_sent = 0
+            if auto_click(driver, config.post_button_xpath, 5, 1):
+                post_posted += 1
+                print(f"Đã đăng {post_posted} bài bằng tài khoản {via.split('|')[0][-4:]} ở luồng {thread_id + 1}")
+                update_group_status(link_group)
+                group_status_chunk[group_idx] = 1
+                
+            time.sleep(uniform(15, 60))
+            # ---------------------------------------------------------------------------------------------------------
+            
+        post_posted = 0
 
 
 threads = []
 for idx in range(num_threads):
-    thread = threading.Thread(target=main, args=(idx, post_chunks[idx], post_status_chunks[idx], via_chunks[idx], via_status_chunks[idx]))
+    thread = threading.Thread(target=main, args=(idx, group_chunks[idx], group_status_chunks[idx], via_chunks[idx], via_status_chunks[idx]))
     thread.start()
     time.sleep(1)
     threads.append(thread)

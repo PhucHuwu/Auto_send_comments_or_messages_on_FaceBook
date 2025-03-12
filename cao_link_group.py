@@ -7,24 +7,16 @@ import threading
 import os
 import pandas as pd
 import config
+from click import auto_click
 
 
-if not os.path.exists('link_nhom.csv'):
-    print("Hãy đảm bảo file excel tồn tại")
-    time.sleep(10)
-    exit()
-    
-if not os.path.exists("link_facebook.csv"):
+if not os.path.exists("link_nhom_dang_bai.csv"):
     data = {
         "Link": [],
-        "Status": [],
-        "User_ID": []
+        "Status": []
     }
     df = pd.DataFrame(data)
-    df.to_csv("link_facebook.csv", index=False)
-
-df = pd.read_csv('link_nhom.csv')
-list_link_group = df["Link"].dropna().values.tolist()
+    df.to_csv("link_nhom_dang_bai.csv", index=False)
 
 
 driver_lock = threading.Lock()
@@ -32,32 +24,21 @@ file_lock = threading.Lock()
 confirmation_received = threading.Event()
 
 
-def save_user_link(user_links):
-    if not user_links:
-        return
+def save_link_group(link_group):
+    clean_link = link_group.split('?')[0]
 
-    pattern = r"https://www\.facebook\.com/groups/\d+/user/(\d+)/"
+    with file_lock:
+        df = pd.read_csv("link_nhom_dang_bai.csv")
 
-    if isinstance(user_links, str):
-        user_links = [user_links]
-
-    df_new = pd.DataFrame({"Link": user_links, "Status": [0] * len(user_links)})
-    df_new["User_ID"] = df_new["Link"].str.extract(pattern)
-
-    df_new = df_new[df_new["User_ID"].notna()].drop_duplicates(subset=["User_ID"])
-
-    if not df_new.empty:
-        with file_lock:
-            if os.path.exists("link_facebook.csv"):
-                df_old = pd.read_csv("link_facebook.csv")
-                df_new = pd.concat([df_old, df_new]).drop_duplicates(subset=["User_ID"], keep="first")
-
-            df_new["User_ID"] = df_new["User_ID"].astype(int)
-            df_new = df_new.sort_values(by=["User_ID"])
-            df_new.to_csv("link_facebook.csv", index=False, mode='w')
+        if clean_link not in df["Link"].values:
+            new_data = pd.DataFrame({"Link": [clean_link], "Status": [0]})
+            df = pd.concat([df, new_data], ignore_index=True)
+            df.to_csv("link_nhom_dang_bai.csv", index=False)
+        else:
+            pass
 
 
-def main(idx, link_group):
+def main(idx, key):
     options = uc.ChromeOptions()
     profile_directory = f"Profile_{idx + 1}"
     if not os.path.exists(profile_directory):
@@ -86,45 +67,53 @@ def main(idx, link_group):
     driver.execute_script("document.body.style.zoom='100%'")
     driver.get("https://www.facebook.com/")
     confirmation_received.wait()
-    driver.get(link_group + "/members/?locale=vi-VN")
-    driver.execute_script("document.body.style.zoom='25%'")
-    collected_users = set()
+    
+    key = key.replace(" ", "+")
+    driver.get(f"https://www.facebook.com/search/groups/?q={key}&locale=vi-VN")
+    
+    auto_click(driver, config.filter_public_group_xpath, 5, 1)
+    
+    driver.execute_script("document.body.style.zoom='50%'")
+    
+    collected_groups = set()
 
     while True:
         last_height = driver.execute_script("return document.body.scrollHeight")
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(1)
         new_height = driver.execute_script("return document.body.scrollHeight")
-        
+
         try:
-            WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.list_item_xpath)))
-            members = driver.find_elements(By.XPATH, config.list_item_xpath)
+            WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.feed_xpath)))
+            groups = driver.find_elements(By.XPATH, config.feed_xpath)
         except:
             print(f"Lỗi 2 ở luồng {idx + 1}")
             break
-        
-        new_users = []
-        for member in members:
+
+        new_groups = []
+        for group in groups:
             try:
-                href_element = member.find_element(By.XPATH, ".//a[@href]")
-                user_link = href_element.get_attribute("href")
-                
-                if user_link not in collected_users:
-                    collected_users.add(user_link)
-                    new_users.append(user_link)
+                href_element = group.find_element(By.XPATH, ".//a[@href]")
+                link_group = href_element.get_attribute("href")
+
+                if link_group not in collected_groups:
+                    collected_groups.add(link_group)
+                    new_groups.append(link_group)
             except:
                 continue
-        
-        for user_link in new_users:
-            save_user_link(user_link)
-        
+
+        for link_group in new_groups:
+            save_link_group(link_group)
+
         if new_height == last_height:
             break
 
+
+list_key = ["google ads", "quảng cáo google", "seo"]
 threads = []
 
-for idx, link_group in enumerate(list_link_group):
-    thread = threading.Thread(target=main, args=(idx, link_group))
+for idx, key in enumerate(list_key):
+    thread = threading.Thread(target=main, args=(idx, key))
     thread.start()
     time.sleep(1)
     threads.append(thread)

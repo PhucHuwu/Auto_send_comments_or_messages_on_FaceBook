@@ -43,3 +43,11 @@ logout_button_xpath_eng = "//span[text()='Log Out']"
 
 logout_disable_180d_button_xpath = "//div[@role='button'][.//span[contains(text(),'Đăng xuất')]]"
 logout_disable_180d_button_xpath_eng = "//div[@role='button'][.//span[contains(text(),'Log Out')]]"
+
+#----------------------------------------------------------------------------------------------------------------------
+write_something_text_box_xpath = "//span[text()='Bạn viết gì đi...']"
+select_color_button_xpath = "//div[@aria-label='Hiển thị các tùy chọn phông nền']"
+color_select_xpath = "//div[contains(@style, 'linear-gradient(45deg, rgb(255, 0, 71), rgb(44, 52, 199))')]"
+post_button_xpath = "//span[text()='Đăng']"
+
+filter_public_group_xpath = "//input[@aria-label='Nhóm công khai']"

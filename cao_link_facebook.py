@@ -6,24 +6,24 @@ import time
 import threading
 import os
 import pandas as pd
-import config
+import cfg.config as config
 
 
-if not os.path.exists('link_nhom.csv'):
+if not os.path.exists('file/link_nhom.csv'):
     print("Hãy đảm bảo file excel tồn tại")
     time.sleep(10)
     exit()
     
-if not os.path.exists("link_facebook.csv"):
+if not os.path.exists("file/link_facebook.csv"):
     data = {
         "Link": [],
         "Status": [],
         "User_ID": []
     }
     df = pd.DataFrame(data)
-    df.to_csv("link_facebook.csv", index=False)
+    df.to_csv("file/link_facebook.csv", index=False)
 
-df = pd.read_csv('link_nhom.csv')
+df = pd.read_csv('file/link_nhom.csv')
 list_link_group = df["Link"].dropna().values.tolist()
 
 
@@ -48,13 +48,13 @@ def save_user_link(user_links):
 
     if not df_new.empty:
         with file_lock:
-            if os.path.exists("link_facebook.csv"):
-                df_old = pd.read_csv("link_facebook.csv")
+            if os.path.exists("file/link_facebook.csv"):
+                df_old = pd.read_csv("file/link_facebook.csv")
                 df_new = pd.concat([df_old, df_new]).drop_duplicates(subset=["User_ID"], keep="first")
 
             df_new["User_ID"] = df_new["User_ID"].astype(int)
             df_new = df_new.sort_values(by=["User_ID"])
-            df_new.to_csv("link_facebook.csv", index=False, mode='w')
+            df_new.to_csv("file/link_facebook.csv", index=False, mode='w')
 
 
 def main(idx, link_group):

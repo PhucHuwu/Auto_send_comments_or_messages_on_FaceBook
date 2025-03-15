@@ -10,16 +10,16 @@ import os
 import pandas as pd
 import requests
 from random import uniform, choice
-from click import auto_click
-import config
+import cfg.config as config
+from cfg.click import auto_click
 
 
-if not os.path.exists('link_bai_viet.csv'):
+if not os.path.exists('file/link_bai_viet.csv'):
     print("Vui lòng chạy tool cào link bài viết trước")
     time.sleep(30)
     exit()
 
-df_link_post = pd.read_csv('link_bai_viet.csv')
+df_link_post = pd.read_csv('file/link_bai_viet.csv')
 list_link_post = df_link_post["Link"].dropna().values.tolist()
 list_status = df_link_post["Status"].dropna().values.tolist()
 
@@ -28,7 +28,7 @@ if sum(list_status) == len(list_link_post):
     time.sleep(10)
     exit()
 
-with open('kich_ban.txt', 'r', encoding='utf-8') as file:
+with open('file/kich_ban.txt', 'r', encoding='utf-8') as file:
     list_text = file.read().splitlines()
 
 if len(list_text) == 0:
@@ -36,7 +36,7 @@ if len(list_text) == 0:
     time.sleep(10)
     exit()
 
-df_list_via = pd.read_csv('via.csv')
+df_list_via = pd.read_csv('file/via.csv')
 df_list_via = df_list_via[~df_list_via["Status"].isin(["Checkpoint", "Invalid", "Wrong password"])]
 list_via = df_list_via["Via"].dropna().tolist()
 list_status_via = df_list_via["Status"].dropna().tolist()
@@ -81,17 +81,17 @@ def is_logged_out(driver):
 
 def update_via_status(via, status):
     with file_lock:
-        df_list_via = pd.read_csv('via.csv')
+        df_list_via = pd.read_csv('file/via.csv')
         df_list_via["Status"] = df_list_via["Status"].astype(str)
         df_list_via.loc[df_list_via["Via"] == via, "Status"] = status
-        df_list_via.to_csv('via.csv', index=False)
+        df_list_via.to_csv('file/via.csv', index=False)
 
 
 def update_post_status(link_post):
     with file_lock:
-        df_link_post = pd.read_csv('link_bai_viet.csv')
+        df_link_post = pd.read_csv('file/link_bai_viet.csv')
         df_link_post.loc[df_link_post["Link"] == link_post, "Status"] = 1
-        df_link_post.to_csv('link_bai_viet.csv', index=False)
+        df_link_post.to_csv('file/link_bai_viet.csv', index=False)
 
 
 def log_in(driver, thread_id, via, via_status_chunk, via_idx):
@@ -236,8 +236,8 @@ def log_in(driver, thread_id, via, via_status_chunk, via_idx):
                 return False
         return False
 
-    if not auto_click(driver, config.trust_device_button_xpath, 5, 1):
-        if not auto_click(driver, config.trust_device_button_xpath_eng, 5, 1):
+    if not auto_click(driver, config.trust_device_button_xpath, 2, 1):
+        if not auto_click(driver, config.trust_device_button_xpath_eng, 2, 1):
             print(f"Đã tin cậy thiết bị ở luồng {thread_id + 1}")
 
     return True

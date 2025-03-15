@@ -10,22 +10,22 @@ import os
 import pandas as pd
 import requests
 from random import uniform, choice, randint
-from click import auto_click
-import config
+import cfg.config as config
+from cfg.click import auto_click
 
 
-if not os.path.exists('link_nhom_dang_bai.csv'):
+if not os.path.exists('file/link_nhom_dang_bai.csv'):
     data = {
         "Link": [],
         "Status": []
     }
     df_link_group = pd.DataFrame(data)
-    df_link_group.to_csv('link_nhom_dang_bai.csv', index=False)
+    df_link_group.to_csv('file/link_nhom_dang_bai.csv', index=False)
     print("File link_nhom_dang_bai.csv vừa được tạo, vui lòng thêm link nhóm vào file link_nhom_dang_bai.csv")
     time.sleep(30)
     exit()
 
-df_link_group = pd.read_csv('link_nhom_dang_bai.csv')
+df_link_group = pd.read_csv('file/link_nhom_dang_bai.csv')
 list_link_group = df_link_group["Link"].dropna().values.tolist()
 list_status = df_link_group["Status"].dropna().values.tolist()
 
@@ -34,7 +34,7 @@ if sum(list_status) == len(df_link_group):
     time.sleep(10)
     exit()
 
-with open('kich_ban.txt', 'r', encoding='utf-8') as file:
+with open('file/kich_ban.txt', 'r', encoding='utf-8') as file:
     list_text = file.read().splitlines()
 
 if len(list_text) == 0:
@@ -42,7 +42,7 @@ if len(list_text) == 0:
     time.sleep(10)
     exit()
 
-df_list_via = pd.read_csv('via.csv')
+df_list_via = pd.read_csv('file/via.csv')
 df_list_via = df_list_via[~df_list_via["Status"].isin(["Checkpoint", "Invalid", "Wrong password"])]
 list_via = df_list_via["Via"].dropna().tolist()
 list_status_via = df_list_via["Status"].dropna().tolist()
@@ -87,17 +87,17 @@ def is_logged_out(driver):
 
 def update_via_status(via, status):
     with file_lock:
-        df_list_via = pd.read_csv('via.csv')
+        df_list_via = pd.read_csv('file/via.csv')
         df_list_via["Status"] = df_list_via["Status"].astype(str)
         df_list_via.loc[df_list_via["Via"] == via, "Status"] = status
-        df_list_via.to_csv('via.csv', index=False)
+        df_list_via.to_csv('file/via.csv', index=False)
 
 
 def update_group_status(link_group):
     with file_lock:
-        df_link_group = pd.read_csv('link_nhom_dang_bai.csv')
+        df_link_group = pd.read_csv('file/link_nhom_dang_bai.csv')
         df_link_group.loc[df_link_group["Link"] == link_group, "Status"] = 1
-        df_link_group.to_csv('link_nhom_dang_bai.csv', index=False)
+        df_link_group.to_csv('file/link_nhom_dang_bai.csv', index=False)
 
 
 def log_in(driver, thread_id, via, via_status_chunk, via_idx):
@@ -242,8 +242,8 @@ def log_in(driver, thread_id, via, via_status_chunk, via_idx):
                 return False
         return False
 
-    if not auto_click(driver, config.trust_device_button_xpath, 5, 1):
-        if not auto_click(driver, config.trust_device_button_xpath_eng, 5, 1):
+    if not auto_click(driver, config.trust_device_button_xpath, 2, 1):
+        if not auto_click(driver, config.trust_device_button_xpath_eng, 2, 1):
             print(f"Đã tin cậy thiết bị ở luồng {thread_id + 1}")
 
     return True
@@ -327,8 +327,10 @@ def main(thread_id, group_chunk, group_status_chunk, via_chunk, via_status_chunk
             driver.execute_script("document.body.style.zoom='50%'")
             time.sleep(uniform(2, 5))
             ActionChains(driver).send_keys(Keys.ESCAPE * 5).perform()
+            
             for _ in range(randint(3, 10)):
                 driver.execute_script(f"window.scrollBy(0, {randint(25, 100)});")
+                time.sleep(1)
             driver.execute_script("window.scrollTo(0, 0);")
             time.sleep(uniform(5, 10))
             # ---------------------------------------------------------------------------------------------------------

@@ -6,17 +6,17 @@ import time
 import threading
 import os
 import pandas as pd
-import config
-from click import auto_click
+import cfg.config as config
+from cfg.click import auto_click
 
 
-if not os.path.exists("link_nhom_dang_bai.csv"):
+if not os.path.exists("file/link_nhom_dang_bai.csv"):
     data = {
         "Link": [],
         "Status": []
     }
     df = pd.DataFrame(data)
-    df.to_csv("link_nhom_dang_bai.csv", index=False)
+    df.to_csv("file/link_nhom_dang_bai.csv", index=False)
 
 
 driver_lock = threading.Lock()
@@ -28,12 +28,12 @@ def save_link_group(link_group):
     clean_link = link_group.split('?')[0]
 
     with file_lock:
-        df = pd.read_csv("link_nhom_dang_bai.csv")
+        df = pd.read_csv("file/link_nhom_dang_bai.csv")
 
         if clean_link not in df["Link"].values:
             new_data = pd.DataFrame({"Link": [clean_link], "Status": [0]})
             df = pd.concat([df, new_data], ignore_index=True)
-            df.to_csv("link_nhom_dang_bai.csv", index=False)
+            df.to_csv("file/link_nhom_dang_bai.csv", index=False)
         else:
             pass
 

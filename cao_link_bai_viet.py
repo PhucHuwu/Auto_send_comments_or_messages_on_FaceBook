@@ -11,24 +11,24 @@ import pandas as pd
 import requests
 import pyperclip
 from random import uniform
-from click import auto_click
-import config
+import cfg.config as config
+from cfg.click import auto_click
 
 
-if not os.path.exists('link_nhom.csv'):
+if not os.path.exists('file/link_nhom.csv'):
     print("Hãy đảm bảo file excel tồn tại")
     time.sleep(10)
     exit()
 
-if not os.path.exists("link_bai_viet.csv"):
+if not os.path.exists("file/link_bai_viet.csv"):
     data = {
         "Link": [],
         "Status": [],
     }
     df = pd.DataFrame(data)
-    df.to_csv("link_bai_viet.csv", index=False)
+    df.to_csv("file/link_bai_viet.csv", index=False)
 
-df = pd.read_csv('link_nhom.csv')
+df = pd.read_csv('file/link_nhom.csv')
 list_link_group = df["Link"].dropna().values.tolist()
 
 
@@ -42,15 +42,15 @@ def save_post_link(link_post):
         link_post = link_post.split("permalink/")[0] + "permalink/" + link_post.split("permalink/")[1].split("/")[0] + "/"
 
     with file_lock:
-        if os.path.exists("link_bai_viet.csv"):
-            df_old = pd.read_csv("link_bai_viet.csv")
+        if os.path.exists("file/link_bai_viet.csv"):
+            df_old = pd.read_csv("file/link_bai_viet.csv")
         else:
             df_old = pd.DataFrame(columns=["Link", "Status"])
 
         if link_post not in df_old["Link"].values:
             new_data = pd.DataFrame([{"Link": link_post, "Status": 0}])
             df_new = pd.concat([df_old, new_data], ignore_index=True)
-            df_new.to_csv("link_bai_viet.csv", index=False)
+            df_new.to_csv("file/link_bai_viet.csv", index=False)
 
 
 def main(idx, link_group):
@@ -99,14 +99,14 @@ def main(idx, link_group):
         print(f"Số lần cuộn còn lại: {scroll_times}")
         if new_height == last_height or scroll_times == 0:
             break
-        
+
     try:
         WebDriverWait(driver, 30).until(EC.presence_of_all_elements_located((By.XPATH, config.feed_xpath)))
         posts = driver.find_elements(By.XPATH, config.feed_xpath)[1:]
     except:
         print(f"Lỗi 2 ở luồng {idx + 1}")
         return
-    
+
     for post in posts:
         try:
             driver.execute_script("arguments[0].scrollIntoView(true);", post)

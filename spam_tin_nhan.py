@@ -117,13 +117,13 @@ def log_in(driver, thread_id, via, via_status_chunk, via_idx):
     try:
         found = False
         try:
-            WebDriverWait(driver, 5).until(
+            WebDriverWait(driver, 2).until(
                 EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'Email hoặc số di động bạn nhập không kết nối với tài khoản nào')]"))
             )
             found = True
         except:
             try:
-                WebDriverWait(driver, 5).until(
+                WebDriverWait(driver, 2).until(
                     EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'The email address or mobile number you entered isn't connected to an account')]"))
                 )
                 found = True
@@ -141,13 +141,13 @@ def log_in(driver, thread_id, via, via_status_chunk, via_idx):
     try:
         found = False
         try:
-            WebDriverWait(driver, 5).until(
+            WebDriverWait(driver, 2).until(
                 EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'Mật khẩu bạn nhập không chính xác')]"))
             )
             found = True
         except:
             try:
-                WebDriverWait(driver, 5).until(
+                WebDriverWait(driver, 2).until(
                     EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'The password that you've entered is incorrect')]"))
                 )
                 found = True
@@ -165,13 +165,13 @@ def log_in(driver, thread_id, via, via_status_chunk, via_idx):
     try:
         found = False
         try:
-            WebDriverWait(driver, 5).until(
+            WebDriverWait(driver, 2).until(
                 EC.visibility_of_element_located((By.XPATH, "//*[contains(text(), 'Kiểm tra thông báo trên thiết bị khác')]"))
             )
             found = True
         except:
             try:
-                WebDriverWait(driver, 5).until(
+                WebDriverWait(driver, 2).until(
                     EC.visibility_of_element_located((By.XPATH, "//*[contains(text(), 'Check your notifications on another device')]"))
                 )
                 found = True

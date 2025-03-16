@@ -20,7 +20,7 @@ Dự án này được thiết kế để tự động gửi bình luận, đăn
 ## Sử dụng
 
 1. **Cấu hình chương trình**
-    - Điền thông tin cần thiết vào các tệp trong thư mục `cfg`.
+    - Chỉnh sửa các thông tin trong các tệp trong thư mục `file`.
 
 2. **Chạy chương trình**
     - Chạy các chương trình phù hợp với mục đích.

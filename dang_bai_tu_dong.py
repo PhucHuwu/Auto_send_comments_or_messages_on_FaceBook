@@ -252,6 +252,16 @@ def log_in(driver, thread_id, via, via_status_chunk, via_idx):
 
 def main(thread_id, group_chunk, group_status_chunk, via_chunk, via_status_chunk):
     options = uc.ChromeOptions()
+    options.add_argument("--password-store=basic")
+    options.add_argument("--disable-popup-blocking")
+    options.add_argument("--disable-notifications")
+    options.add_experimental_option(
+        "prefs",
+        {
+            "credentials_enable_service": False,
+            "profile.password_manager_enabled": False,
+        },
+    )
     profile_directory = f"Profile_{thread_id + 1}"
     if not os.path.exists(profile_directory):
         os.makedirs(profile_directory)
@@ -322,7 +332,14 @@ def main(thread_id, group_chunk, group_status_chunk, via_chunk, via_status_chunk
 
             if post_posted >= max_groups_per_via:
                 break
-
+            
+            if "checkpoint" in driver.current_url:
+                print(f"Tài khoản ở luồng {thread_id + 1} đã bị checkpoint, đang thực hiện đăng xuất")
+                time.sleep(uniform(1, 3))
+                update_via_status(via, "Checkpoint")
+                via_status_chunk[via_idx] = "Checkpoint"
+                break
+            
             driver.get(link_group + "?locale=vi-VN")
             driver.execute_script("document.body.style.zoom='50%'")
             time.sleep(uniform(2, 5))
@@ -358,6 +375,7 @@ def main(thread_id, group_chunk, group_status_chunk, via_chunk, via_status_chunk
             # ---------------------------------------------------------------------------------------------------------
             
         post_posted = 0
+    print(f"Đã hết via ở luồng {thread_id + 1}")
 
 
 threads = []

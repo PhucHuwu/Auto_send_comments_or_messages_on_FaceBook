@@ -246,6 +246,16 @@ def log_in(driver, thread_id, via, via_status_chunk, via_idx):
 
 def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_status_chunk):
     options = uc.ChromeOptions()
+    options.add_argument("--password-store=basic")
+    options.add_argument("--disable-popup-blocking")
+    options.add_argument("--disable-notifications")
+    options.add_experimental_option(
+        "prefs",
+        {
+            "credentials_enable_service": False,
+            "profile.password_manager_enabled": False,
+        },
+    )
     profile_directory = f"Profile_{thread_id + 1}"
     if not os.path.exists(profile_directory):
         os.makedirs(profile_directory)
@@ -317,7 +327,14 @@ def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_stat
 
             if messages_sent >= max_messages_per_via:
                 break
-
+            
+            if "checkpoint" in driver.current_url:
+                print(f"Tài khoản ở luồng {thread_id + 1} đã bị checkpoint, đang thực hiện đăng xuất")
+                time.sleep(uniform(1, 3))
+                update_via_status(via, "Checkpoint")
+                via_status_chunk[via_idx] = "Checkpoint"
+                break
+            
             driver.get(link_user + "?locale=vi-VN")
             driver.execute_script("document.body.style.zoom='25%'")
             time.sleep(uniform(15, 60))
@@ -352,7 +369,8 @@ def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_stat
                     text_split = text.split('=')
                     for i in range(len(text_split)):
                         ActionChains(driver).send_keys(text_split[i]).perform()
-                        ActionChains(driver).send_keys(Keys.SHIFT + Keys.ENTER).perform()
+                        ActionChains(driver).key_down(Keys.SHIFT).key_down(Keys.ENTER).key_up(Keys.SHIFT).key_up(Keys.ENTER).perform()
+                    ActionChains(driver).send_keys(Keys.ENTER).perform()
                 else:
                     ActionChains(driver).send_keys(text + Keys.ENTER).perform()
                 time.sleep(2)
@@ -366,6 +384,7 @@ def main(thread_id, link_user_chunk, link_user_status_chunk, via_chunk, via_stat
             link_user_status_chunk[idx] = 1
 
         messages_sent = 0
+    print(f"Đã hết via ở luồng {thread_id + 1}")
 
 
 threads = []

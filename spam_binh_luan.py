@@ -46,8 +46,8 @@ if len(list_via) == 0:
     time.sleep(10)
     exit()
 
-max_comments_per_via = 20
-num_threads = len(list_via) // 4
+max_comments_per_via = 10
+num_threads = max(1, len(list_via) // 4)
 
 post_chunks = [list_link_post[i::num_threads] for i in range(num_threads)]
 post_status_chunks = [list_status[i::num_threads] for i in range(num_threads)]
@@ -246,6 +246,16 @@ def log_in(driver, thread_id, via, via_status_chunk, via_idx):
 
 def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
     options = uc.ChromeOptions()
+    options.add_argument("--password-store=basic")
+    options.add_argument("--disable-popup-blocking")
+    options.add_argument("--disable-notifications")
+    options.add_experimental_option(
+        "prefs",
+        {
+            "credentials_enable_service": False,
+            "profile.password_manager_enabled": False,
+        },
+    )
     profile_directory = f"Profile_{thread_id + 1}"
     if not os.path.exists(profile_directory):
         os.makedirs(profile_directory)
@@ -279,7 +289,7 @@ def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
 
         driver.get("https://www.facebook.com/?locale=vi-VN")
         time.sleep(3)
-        
+
         if is_logged_out(driver):
             if not log_in(driver, thread_id, via, via_status_chunk, via_idx):
                 continue
@@ -308,14 +318,21 @@ def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
                 if not auto_click(driver, config.logout_disable_180d_button_xpath_eng, 5, 1):
                     continue
             continue
-        
+
         print(f"luồng {thread_id + 1} đang chạy tài khoản {via.split('|')[0][-4:]}")
-        
+
         for post_idx, link_post in enumerate(post_chunk):
             if post_status_chunk[post_idx] == 1:
                 continue
 
             if comments_sent >= max_comments_per_via:
+                break
+            
+            if "checkpoint" in driver.current_url:
+                print(f"Tài khoản ở luồng {thread_id + 1} đã bị checkpoint, đang thực hiện đăng xuất")
+                time.sleep(uniform(1, 3))
+                update_via_status(via, "Checkpoint")
+                via_status_chunk[via_idx] = "Checkpoint"
                 break
 
             driver.get(link_post + "?locale=vi-VN")
@@ -329,6 +346,8 @@ def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
                 ).click()
             except:
                 print(f"Không thể tìm thấy nút bình luận ở luồng {thread_id + 1}")
+                update_post_status(link_post)
+                post_status_chunk[post_idx] = 1
                 continue
             time.sleep(uniform(2, 10))
 
@@ -350,7 +369,8 @@ def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
                     text_split = text.split('=')
                     for i in range(len(text_split)):
                         ActionChains(driver).send_keys(text_split[i]).perform()
-                        ActionChains(driver).send_keys(Keys.SHIFT + Keys.ENTER).perform()
+                        ActionChains(driver).key_down(Keys.SHIFT).key_down(Keys.ENTER).key_up(Keys.SHIFT).key_up(Keys.ENTER).perform()
+                    ActionChains(driver).send_keys(Keys.ENTER).perform()
                 else:
                     ActionChains(driver).send_keys(text + Keys.ENTER).perform()
                 time.sleep(2)
@@ -377,6 +397,7 @@ def main(thread_id, post_chunk, post_status_chunk, via_chunk, via_status_chunk):
             post_status_chunk[post_idx] = 1
 
         comments_sent = 0
+    print(f"Đã hết via ở luồng {thread_id + 1}")
 
 
 threads = []

@@ -55,9 +55,16 @@ def save_post_link(link_post):
 
 def main(idx, link_group):
     options = uc.ChromeOptions()
-    options.add_argument("--clipboard-read")
-    options.add_argument("--clipboard-write")
-    options.add_argument("--enable-features=ClipboardReadWrite")
+    options.add_argument("--password-store=basic")
+    options.add_argument("--disable-popup-blocking")
+    options.add_argument("--disable-notifications")
+    options.add_experimental_option(
+        "prefs",
+        {
+            "credentials_enable_service": False,
+            "profile.password_manager_enabled": False,
+        },
+    )
     profile_directory = f"Profile_{idx + 1}"
     if not os.path.exists(profile_directory):
         os.makedirs(profile_directory)
